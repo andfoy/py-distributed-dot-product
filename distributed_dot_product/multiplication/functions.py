@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Distributed multiplication autograd definitions."""
-
-# Standard lib imports
-from typing import Any, Callable, Union, Tuple, Sequence, Optional
+"""Distributed multiplication definitions."""
 
 # PyTorch imports
 import torch
-import torch.nn as nn
+# import torch.nn as nn
 from torch import Tensor
-import torch.autograd as autograd
+# import torch.autograd as autograd
 
 # Local imports
 from distributed_transformer.utils.comm import (
@@ -17,6 +14,12 @@ from distributed_transformer.utils.comm import (
 
 # Distributed imports
 import horovod.torch as hvd
+
+
+def get_splits(rank, mat, split_size):
+    start = rank * split_size
+    end = start + split_size
+    return mat[..., start:end]
 
 
 def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
@@ -42,14 +45,9 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
 
 
 def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
-    def get_splits(rank, mat, split_size):
-        start = rank * split_size
-        end = start + split_size
-        return mat[:, :, start:end] if dims == 3 else mat[:, start:end]
-
     dims = left.dim()
     assert dims <= 3 and dims >= 2
-    cols = left.size(dims - 1)
+    cols = left.size(-1)
     world_size = get_world_size()
     rank = get_rank()
 
@@ -71,21 +69,40 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
             col_rank = torch.matmul(rank_split.transpose(-1, -2), col)
             all_cols = hvd.allreduce(col_rank, name=f'matmul_tn_{col}_{r}')
             if r == rank:
-                rank_block[:, col] = all_cols
+                rank_block[..., col] = all_cols
     return rank_block
 
 
-class RightTransposeMultiplication(autograd.Function):
-    @staticmethod
-    def forward(ctx: Any, left: Tensor, right: Tensor) -> Tensor:
-        ctx.save_for_backward(left, right)
-        # self_mult = left.matmul(right.transpose(-2, -1))
-        proj = distributed_matmul_nt(left, right)
-        return proj
+def distributed_matmul_block(left: Tensor, right: Tensor,
+                             transpose: bool = False) -> Tensor:
+    rank_block = torch.matmul(left, right)
+    if transpose:
+        rank_block = rank_block.tranpose(-1, -2)
+    rank_block: Tensor = hvd.allreduce(rank_block, name='matmul_block')
+    return rank_block
 
-    @staticmethod
-    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor):
-        # return super().backward(ctx, *grad_outputs)
-        left, right = ctx.saved_tensors
-        grad_left = grad_right = None
-        return grad_left, grad_right
+
+def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
+    dims = left.dim()
+    assert dims <= 3 and dims >= 2
+    cols = left.size(dims - 1)
+    world_size = get_world_size()
+
+    total_cols = right.size(-1)
+    split_size = cols // world_size
+    splits = [get_splits(r, left, split_size) for r in range(world_size)]
+    size = ((left.size(0), left.size(1), right.size(-1))
+            if dims == 3 else (left.size(0), right.size(-1)))
+    rank_block = torch.zeros(*size, device=left.device)
+
+    total_cols = right.size(-1)
+    synchronize()
+    for current_col in range(total_cols):
+        col = right[:, :, current_col] if dims == 3 else right[:, current_col]
+        all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
+        col_result = rank_block[..., current_col]
+        for i, (split, rank_col) in enumerate(zip(splits, all_cols)):
+            rank_result = torch.matmul(split, rank_col)
+            col_result = col_result + rank_result
+        rank_result[..., current_col] = col_result
+    return rank_result

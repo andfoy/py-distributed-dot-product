@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Setup script for distributed-transformer."""
+"""Setup script for distributed-dot-product."""
 
 # yapf: disable
 
