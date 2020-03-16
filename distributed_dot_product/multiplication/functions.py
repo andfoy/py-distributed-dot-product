@@ -9,7 +9,7 @@ from torch import Tensor
 # import torch.autograd as autograd
 
 # Local imports
-from distributed_transformer.utils.comm import (
+from distributed_dot_product.utils.comm import (
     get_rank, get_world_size, synchronize)
 
 # Distributed imports

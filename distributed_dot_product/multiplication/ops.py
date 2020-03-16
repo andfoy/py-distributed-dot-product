@@ -11,7 +11,7 @@ from torch import Tensor
 import torch.autograd as autograd
 
 # Local imports
-from distributed_transformer.multiplication.functions import (
+from distributed_dot_product.multiplication.functions import (
     distributed_matmul_nt, distributed_matmul_tn, distributed_matmul_block,
     distributed_matmul_all
 )
