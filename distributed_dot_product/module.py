@@ -22,6 +22,7 @@ class DistributedDotProductAttn(nn.Module):
     def __init__(self, key_dim: int, value_dim: int = None,
                  query_dim: int = None, num_heads: int = 1,
                  add_bias: bool = False):
+        super(DistributedDotProductAttn, self).__init__()
         assert key_dim % num_heads == 0
         value_dim = value_dim if value_dim is not None else key_dim
         query_dim = query_dim if query_dim is not None else key_dim
