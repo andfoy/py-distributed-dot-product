@@ -99,9 +99,10 @@ def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
     synchronize()
     for current_col in range(total_cols):
         col = right[..., current_col]
+        col_result = rank_block[..., current_col]
         col = col.contiguous()
         all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
-        col_result = rank_block[..., current_col]
+        all_cols = all_cols.split(1, dim=0)
         for i, (split, rank_col) in enumerate(zip(splits, all_cols)):
             rank_result = torch.matmul(split, rank_col)
             col_result = col_result + rank_result
