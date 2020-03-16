@@ -6,6 +6,7 @@ from distributed_dot_product.utils.comm import get_rank, get_world_size
 from distributed_dot_product.module import DistributedDotProductAttn
 
 torch.manual_seed(111)
+torch.cuda.set_device(get_rank())
 
 device = torch.device('cuda')
 module = DistributedDotProductAttn(256, num_heads=1)
