@@ -17,7 +17,7 @@ length = 24
 world_size = get_world_size()
 x = torch.rand(1, length // world_size, 256, device=device)
 y = torch.rand(1, length // world_size, 256, device=device)
-mask = torch.zeros(1, length // world_size, length, device=device)
+mask = torch.zeros(1, length // world_size, length, device=device).bool()
 
 out = module(x, x, x, mask)
 loss = criterion(out, y)
