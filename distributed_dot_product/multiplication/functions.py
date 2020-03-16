@@ -66,7 +66,9 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
         col = right[:, :, current_col] if dims == 3 else right[:, current_col]
         for r in range(world_size):
             rank_split = splits[r]
-            col_rank = torch.matmul(rank_split.transpose(-1, -2), col)
+            col_rank = torch.matmul(rank_split.transpose(-1, -2),
+                                    col.unsqueeze(-1))
+            col_rank = col_rank.squeeze(-1)
             all_cols = hvd.allreduce(col_rank, name=f'matmul_tn_{col}_{r}')
             if r == rank:
                 rank_block[..., col] = all_cols
@@ -108,4 +110,4 @@ def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
             rank_result = rank_result.squeeze(-1)
             col_result = col_result + rank_result
         rank_block[..., current_col] = col_result
-    return rank_block
+    return rank_block.contiguous()
