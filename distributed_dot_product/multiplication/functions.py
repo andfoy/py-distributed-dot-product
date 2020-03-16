@@ -41,7 +41,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
         for rank, rank_col in enumerate(partial_results):
             result[rank * rows + row] = rank_col
     result = torch.cat(result, dim=-1)
-    return result
+    return result.contiguous()
 
 
 def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
@@ -70,7 +70,7 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
             all_cols = hvd.allreduce(col_rank, name=f'matmul_tn_{col}_{r}')
             if r == rank:
                 rank_block[..., col] = all_cols
-    return rank_block
+    return rank_block.contiguous()
 
 
 def distributed_matmul_block(left: Tensor, right: Tensor,
