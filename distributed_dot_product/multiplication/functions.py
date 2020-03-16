@@ -37,7 +37,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
         # all_rows: Rxdim
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
         partial_results = left.matmul(all_rows.transpose(-1, -2))
-        partial_results = partial_results.split(1, dim=1)
+        partial_results = partial_results.split(1, dim=-1)
         for rank, rank_col in enumerate(partial_results):
             result[rank * rows + row] = rank_col
     result = torch.cat(result, dim=-1)
