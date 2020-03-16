@@ -98,7 +98,8 @@ def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
     total_cols = right.size(-1)
     synchronize()
     for current_col in range(total_cols):
-        col = right[:, :, current_col] if dims == 3 else right[:, current_col]
+        col = right[..., current_col]
+        col = col.contiguous()
         all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
         col_result = rank_block[..., current_col]
         for i, (split, rank_col) in enumerate(zip(splits, all_cols)):
