@@ -72,6 +72,7 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
             all_cols = hvd.allreduce(col_rank, name=f'matmul_tn_{col}_{r}')
             if r == rank:
                 rank_block[..., col] = all_cols
+            synchronize()
     return rank_block.contiguous()
 
 
