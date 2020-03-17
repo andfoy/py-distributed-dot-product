@@ -32,7 +32,7 @@ class RightTransposeMultiplication(autograd.Function):
         grad_left = grad_right = None
         grad_right = distributed_matmul_tn(output_grad, left)
         grad_left = distributed_matmul_all(output_grad, right)
-        grad_left = grad_left.transpose(-1, -2)
+        # grad_left = grad_left.transpose(-1, -2)
         return grad_left, grad_right
 
 
