@@ -14,10 +14,10 @@ module.to(device)
 
 criterion = nn.MSELoss()
 
-length = 24
+length = 4096
 world_size = get_world_size()
-x = torch.rand(1, length // world_size, 256, device=device)
-y = torch.rand(1, length // world_size, 256, device=device)
+x = torch.rand(1, length // world_size, 768, device=device)
+y = torch.rand(1, length // world_size, 768, device=device)
 mask = torch.zeros(1, length // world_size, length, device=device).bool()
 
 out = module(x, x, x, mask)
