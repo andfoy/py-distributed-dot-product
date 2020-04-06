@@ -31,7 +31,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
     # rank = get_rank()
     total_rows = rows * world_size
     # result = [None for _ in range(0, total_rows)]
-    offset = 4
+    offset = 32
     result = torch.empty((world_size, left.size(1), rows),
                          device=left.device)
     for row in range(0, rows, offset):
@@ -102,6 +102,7 @@ def distributed_matmul_block(left: Tensor, right: Tensor,
 
 
 def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
+    right = right.contiguous()
     dims = left.dim()
     assert dims <= 3 and dims >= 2
     cols = left.size(dims - 1)
@@ -110,22 +111,32 @@ def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
     total_cols = right.size(-1)
     split_size = cols // world_size
     # splits = [get_splits(r, left, split_size) for r in range(world_size)]
-    splits = left.split(split_size, -1)
-    size = ((left.size(0), left.size(1), right.size(-1))
-            if dims == 3 else (left.size(0), right.size(-1)))
+    splits = torch.cat(left.split(split_size, -1), dim=0)
+
+    # size = ((left.size(0), left.size(1), right.size(-1))
+    #         if dims == 3 else (left.size(0), right.size(-1)))
+    size = (world_size, left.size(1), total_cols)
     rank_block = torch.empty(*size, device=left.device)
 
     total_cols = right.size(-1)
     synchronize()
-    for current_col in range(total_cols):
-        col = right[..., current_col]
-        col_result = rank_block[..., current_col]
-        col = col.contiguous()
+    offset = 32
+    for current_col in range(0, total_cols, offset):
+        end_bound = current_col + offset
+        col = right[..., current_col:end_bound]
+        # col_result = rank_block[..., current_col:end_bound]
         all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
-        all_cols = all_cols.split(1, dim=0)
-        for i, (split, rank_col) in enumerate(zip(splits, all_cols)):
-            rank_result = torch.matmul(split, rank_col.unsqueeze(-1))
-            rank_result = rank_result.squeeze(-1)
-            col_result = col_result + rank_result
-        rank_block[..., current_col] = col_result
-    return rank_block.contiguous()
+        # all_cols: torch.size([world_size, right.size(1), offset])
+        block_result = torch.matmul(splits, all_cols)
+        rank_block[..., current_col:end_bound] = block_result
+        # all_cols = all_cols.split(1, dim=0)
+        # for i, (split, rank_col) in enumerate(zip(splits, all_cols)):
+        #     rank_result = torch.matmul(split, rank_col.unsqueeze(-1))
+        #     rank_result = rank_result.squeeze(-1)
+        #     col_result = col_result + rank_result
+        # rank_block[..., current_col] = col_result
+    result = rank_block.sum(dim=0).unsqueeze(0)
+    # result = rank_block.transpose(0, 1).reshape(left.size(0),
+    #                                             left.size(1),
+    #                                             right.size(-1))
+    return result
