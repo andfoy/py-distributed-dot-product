@@ -2,6 +2,10 @@
 
 """Distributed multiplication definitions."""
 
+# Standard library imports
+import time
+import functools
+
 # PyTorch imports
 import torch
 # import torch.nn as nn
@@ -16,12 +20,23 @@ from distributed_dot_product.utils.comm import (
 import horovod.torch as hvd
 
 
+def measure(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = f(*args, **kwargs)
+        print(f'{f.__name__} elapsed time: {time.time() - start_time}')
+        return result
+    return wrapper
+
+
 def get_splits(rank, mat, split_size):
     start = rank * split_size
     end = start + split_size
     return mat[..., start:end]
 
 
+@measure
 def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
     synchronize()
     dims = left.dim()
@@ -52,6 +67,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
     return result
 
 
+@measure
 def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
     dims = left.dim()
     assert dims <= 3 and dims >= 2
@@ -101,6 +117,7 @@ def distributed_matmul_block(left: Tensor, right: Tensor,
     return rank_block
 
 
+@measure
 def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
     right = right.contiguous()
     dims = left.dim()
