@@ -30,18 +30,26 @@ def distributed_matmul_nt(left: Tensor, right: Tensor) -> Tensor:
     world_size = get_world_size()
     # rank = get_rank()
     total_rows = rows * world_size
-    result = [None for _ in range(0, total_rows)]
-    for row in range(rows):
-        current_row = right[:, row] if dims == 3 else right[row]
-        # [r0[row], r1[row], ..., rworld[row]]
-        # all_rows: Rxdim
+    # result = [None for _ in range(0, total_rows)]
+    offset = 4
+    result = torch.empty((world_size, left.size(1), rows),
+                         device=left.device)
+    for row in range(0, rows, offset):
+        end_bound = row + offset
+        current_row = (right[:, row:end_bound]
+                       if dims == 3 else right[row:end_bound])
+        # [r0[row:end_bound], r1[row:end_bound], ..., rworld[row:end_bound]]
+        # all_rows: world_size x offset x dim
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
         partial_results = left.matmul(all_rows.transpose(-1, -2))
-        partial_results = partial_results.split(1, dim=-1)
-        for rank, rank_col in enumerate(partial_results):
-            result[rank * rows + row] = rank_col
-    result = torch.cat(result, dim=-1)
-    return result.contiguous()
+        result[:, :, row:end_bound] = partial_results
+        # partial_results = partial_results.split(1, dim=-1)
+        # for rank, rank_col in enumerate(partial_results):
+        #     result[rank * rows + row] = rank_col
+    result = result.transpose(0, 1).reshape(left.size(0),
+                                            left.size(1), total_rows)
+    # result = torch.cat(result, dim=-1)
+    return result
 
 
 def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
