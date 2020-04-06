@@ -119,7 +119,6 @@ def distributed_matmul_block(left: Tensor, right: Tensor,
 
 @measure
 def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
-    right = right.contiguous()
     dims = left.dim()
     assert dims <= 3 and dims >= 2
     cols = left.size(dims - 1)
@@ -141,6 +140,7 @@ def distributed_matmul_all(left: Tensor, right: Tensor) -> Tensor:
     for current_col in range(0, total_cols, offset):
         end_bound = current_col + offset
         col = right[..., current_col:end_bound]
+        col = col.contiguous()
         # col_result = rank_block[..., current_col:end_bound]
         all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
         # all_cols: torch.size([world_size, right.size(1), offset])
