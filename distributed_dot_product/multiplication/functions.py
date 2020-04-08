@@ -3,14 +3,13 @@
 """Distributed multiplication definitions."""
 
 # Standard library imports
+import os
 import time
 import functools
 
 # PyTorch imports
 import torch
-# import torch.nn as nn
 from torch import Tensor
-# import torch.autograd as autograd
 
 # Local imports
 from distributed_dot_product.utils.comm import (
@@ -19,19 +18,53 @@ from distributed_dot_product.utils.comm import (
 # Distributed imports
 import horovod.torch as hvd
 
+DEBUG = bool(os.environ.get('DISTRIBUTED_DOT_DEBUG', 0))
+
 
 def measure(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = f(*args, **kwargs)
-        print(f'{f.__name__} elapsed time: {time.time() - start_time}')
+        if DEBUG:
+            print(f'{f.__name__} elapsed time: {time.time() - start_time}')
         return result
     return wrapper
 
 
 @measure
 def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
+    """
+    Multiply two sequence tensors to obtain the result of :math:`AB^T`.
+
+    Left and right inputs must be 3-dimensional tensors of size
+    :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the total length,
+    :math:`N` is the total number of processes available and :math:`D`, the
+    dimension of the sequence. The result of this function is a tensor of size
+    :math:`1 \times \frac{T}{N} \times T`, that contain the result chunk for
+    each process of the resulting operation.
+
+    Inputs
+    ------
+    left: Tensor
+        :math:`A` in :math:`AB^T`, must be of size
+        :math:`1 \times \frac{T}{N} \times D`.
+    right: Tensor
+        :math:`B` in :math:`AB^T`, must be of size
+        :math:`1 \times \frac{T}{N} \times D`.
+    offset: int
+        Number of chunks to communicate during each distributed step, it must
+        be a factor of :math:`\frac{T}{N}`. This factor should be modified in
+        order to reduce the total computing time at the expense of the memory
+        used.
+
+    Returns
+    -------
+    result: Tensor
+        For each process, this function computes the corresponding segment
+        of the operation :math:`A^T B`, of size
+        :math:`1 \times \frac{T}{N} \times T`.
+    """
     synchronize()
     dims = left.dim()
     assert dims <= 3 and dims >= 2
@@ -58,6 +91,33 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
 
 @measure
 def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
+    """
+    Multiply two sequence tensors to obtain the result of :math:`A^{T} B`.
+
+    Left and right inputs must be 3-dimensional tensors, where the first one
+    must be of size :math:`1 \times \frac{T}{N} \times T` and the second one of
+    size , where :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the
+    total length,  :math:`N` is the total number of processes available and
+    :math:`D`, the dimension of the sequence. The result of this function is a
+    tensor of size :math:`1 \times \frac{T}{N} \times D`, that contain the
+    result chunk for each process of the resulting operation.
+
+    Inputs
+    ------
+    left: Tensor
+        :math:`A` in :math:`A^T B`, must be of size
+        :math:`1 \times \frac{T}{N} \times T`
+    right: Tensor
+        :math:`B` in :math:`A^T B`, must be of size
+        :math:`1 \times \frac{T}{N} \times D`
+
+    Returns
+    -------
+    result: Tensor
+        For each process, this function computes the corresponding segment
+        of the operation :math:`A^T B`, of size
+        :math:`1 \times \frac{T}{N} \times D`
+    """
     dims = left.dim()
     assert dims <= 3 and dims >= 2
     cols = left.size(-1)
@@ -93,6 +153,33 @@ def distributed_matmul_block(left: Tensor, right: Tensor,
 
 @measure
 def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
+    """
+    Multiply two sequence tensors to obtain the result of :math:`AB`.
+
+    Left and right inputs must be 3-dimensional tensors, where the first one
+    must be of size :math:`1 \times \frac{T}{N} \times T` and the second one of
+    size , where :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the
+    total length,  :math:`N` is the total number of processes available and
+    :math:`D`, the dimension of the sequence. The result of this function is a
+    tensor of size :math:`1 \times \frac{T}{N} \times D`, that contain the
+    result chunk for each process of the resulting operation.
+
+    Inputs
+    ------
+    left: Tensor
+        :math:`A` in :math:`AB`, must be of size
+        :math:`1 \times \frac{T}{N} \times T`
+    right: Tensor
+        :math:`B` in :math:`AB`, must be of size
+        :math:`1 \times \frac{T}{N} \times D`
+
+    Returns
+    -------
+    result: Tensor
+        For each process, this function computes the corresponding segment
+        of the operation :math:`AB`, of size
+        :math:`1 \times \frac{T}{N} \times D`
+    """
     dims = left.dim()
     assert dims <= 3 and dims >= 2
     cols = left.size(dims - 1)
