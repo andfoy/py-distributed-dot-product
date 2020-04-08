@@ -27,7 +27,7 @@ DIM = 6
 def create_tensor(*sizes):
     product = functools.reduce(lambda x, y: x * y, sizes)
     seq_tensor = torch.arange(product)
-    seq_tensor = torch.view(*sizes)
+    seq_tensor = seq_tensor.view(*sizes)
     return seq_tensor
 
 
