@@ -72,8 +72,8 @@ def tensor_fixture(request, distributed_fixture):
     tensor_fn, funcs = MODES[mode]
     tensors = [f(world_size) for f in tensor_fn]
     gt_left, gt_right, test_left, test_right = tensors
-    test_left = test_left[rank]
-    test_right = test_right[rank]
+    test_left = test_left[rank].unsqueeze(0)
+    test_right = test_right[rank].unsqueeze(0)
     return (gt_left, gt_right), (test_left, test_right), funcs
 
 
@@ -82,4 +82,7 @@ def test_distributed_nt(tensor_fixture):
     gt_tensors, test_tensors, (gt_fn, test_fn) = tensor_fixture
     gt_result = gt_fn(*gt_tensors)
     test_result = test_fn(*test_tensors)
-    assert gt_result == test_result
+    gather_result = hvd.allgather(test_result)
+    collapsed = gather_result.size(0) * gather_result.size(1)
+    gather_result = gather_result.view(1, collapsed, -1)
+    assert (gt_result == test_result).all()
