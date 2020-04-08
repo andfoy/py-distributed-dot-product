@@ -31,30 +31,30 @@ def create_tensor(*sizes):
     return seq_tensor
 
 
-class Modes:
-    NT = ((lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
-          lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
-          lambda world_size: create_tensor(world_size, LENGTH, DIM),
-          lambda world_size: create_tensor(world_size, LENGTH, DIM)),
-          (lambda x, y: torch.matmul(x, y.transpose(-1, -2)),
-           functools.partial(distributed_matmul_nt, offset=2))),
-    TN = ((lambda world_size: create_tensor(1, LENGTH * world_size,
-                                            LENGTH * world_size),
-          lambda world_size: create_tensor(1, LENGTH * world_size,
-                                           DIM),
-          lambda world_size: create_tensor(world_size, LENGTH,
-                                           LENGTH * world_size),
-          lambda world_size: create_tensor(world_size, LENGTH, DIM)),
-          (lambda x, y: torch.matmul(x.transpose(-1, -2), y),
-           distributed_matmul_tn))
-    FULL = ((lambda world_size: create_tensor(1, LENGTH * world_size,
-                                              LENGTH * world_size),
+MODES = {
+    'NT': ((lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
+            lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
+            lambda world_size: create_tensor(world_size, LENGTH, DIM),
+            lambda world_size: create_tensor(world_size, LENGTH, DIM)),
+           (lambda x, y: torch.matmul(x, y.transpose(-1, -2)),
+            functools.partial(distributed_matmul_nt, offset=2))),
+    'TN': ((lambda world_size: create_tensor(1, LENGTH * world_size,
+                                             LENGTH * world_size),
             lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
             lambda world_size: create_tensor(world_size, LENGTH,
                                              LENGTH * world_size),
             lambda world_size: create_tensor(world_size, LENGTH, DIM)),
-            (lambda x, y: torch.matmul(x, y),
-             functools.partial(distributed_matmul_all, offset=2)))
+           (lambda x, y: torch.matmul(x.transpose(-1, -2), y),
+            distributed_matmul_tn)),
+    'FULL': ((lambda world_size: create_tensor(1, LENGTH * world_size,
+                                               LENGTH * world_size),
+              lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
+              lambda world_size: create_tensor(world_size, LENGTH,
+                                               LENGTH * world_size),
+              lambda world_size: create_tensor(world_size, LENGTH, DIM)),
+             (lambda x, y: torch.matmul(x, y),
+              functools.partial(distributed_matmul_all, offset=2)))
+}
 
 
 @pytest.fixture(scope='module')
@@ -69,7 +69,7 @@ def distributed_fixture():
 def tensor_fixture(request, distributed_fixture):
     mode = request.param
     world_size, rank = distributed_fixture
-    tensor_fn, funcs = getattr(Modes, mode)
+    tensor_fn, funcs = MODES[mode]
     tensors = [f(world_size) for f in tensor_fn]
     gt_left, gt_right, test_left, test_right = tensors
     test_left = test_left[rank]
@@ -77,7 +77,7 @@ def tensor_fixture(request, distributed_fixture):
     return (gt_left, gt_right), (test_left, test_right), funcs
 
 
-@pytest.mark.parametrize('tensor_fixture', ['NT', 'TN', 'FULL'], indirect=True)
+@pytest.mark.parametrize('tensor_fixture', list(MODES.keys()), indirect=True)
 def test_distributed_nt(tensor_fixture):
     gt_tensors, test_tensors, (gt_fn, test_fn) = tensor_fixture
     gt_result = gt_fn(*gt_tensors)
