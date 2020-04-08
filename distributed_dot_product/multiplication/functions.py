@@ -75,7 +75,8 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
         rank_split = splits[r]
         rank_multiplication = torch.matmul(rank_split.transpose(-1, -2), right)
         handle = hvd.allreduce_async(rank_multiplication,
-                                     name=f'matmul_tn_{r}')
+                                     name=f'matmul_tn_{r}',
+                                     op=hvd.Sum)
         if r == rank:
             rank_block = hvd.synchronize(handle)
     return rank_block.contiguous()
