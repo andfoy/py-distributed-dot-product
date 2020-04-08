@@ -1,4 +1,8 @@
 
+# -*- coding: utf-8 -*-
+
+"""Distributed multiplication usage example."""
+
 import torch
 import torch.nn as nn
 

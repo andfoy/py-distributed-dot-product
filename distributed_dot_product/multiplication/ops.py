@@ -27,7 +27,7 @@ class RightTransposeMultiplication(autograd.Function):
         return proj
 
     @staticmethod
-    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor):
+    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor, None):
         # return super().backward(ctx, *grad_outputs)
         left, right = ctx.saved_tensors
         offset = ctx.offset
@@ -47,7 +47,7 @@ class FullMultiplication(autograd.Function):
         return result
 
     @staticmethod
-    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor):
+    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor, None):
         left, right = ctx.saved_tensors
         offset = ctx.offset
         left_grad = distributed_matmul_nt(output_grad, right, offset=offset)
