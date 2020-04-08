@@ -13,9 +13,8 @@ import pytest
 import torch
 
 # Local imports
-from distributed_dot_product.utils.comm import (
-    get_rank, get_world_size, synchronize)
-from distributed_multiplication.multiplication.functions import (
+from distributed_dot_product.utils.comm import get_rank, get_world_size
+from distributed_dot_product.multiplication.functions import (
     distributed_matmul_nt, distributed_matmul_tn, distributed_matmul_all)
 
 # Distributed imports
