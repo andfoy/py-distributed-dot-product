@@ -69,6 +69,7 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
     size = ((left.size(0), left.size(1), right.size(-1))
             if dims == 3 else (left.size(0), right.size(-1)))
     rank_block = torch.empty(*size, device=left.device)
+
     synchronize()
     for r in range(world_size):
         rank_split = splits[r]

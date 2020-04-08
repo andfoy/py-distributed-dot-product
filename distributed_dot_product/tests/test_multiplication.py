@@ -85,4 +85,4 @@ def test_distributed_nt(tensor_fixture):
     gather_result = hvd.allgather(test_result)
     collapsed = gather_result.size(0) * gather_result.size(1)
     gather_result = gather_result.view(1, collapsed, -1)
-    assert (gt_result == test_result).all()
+    assert (gt_result == gather_result).all()
