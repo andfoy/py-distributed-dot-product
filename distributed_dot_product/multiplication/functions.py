@@ -38,20 +38,20 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
     Multiply two sequence tensors to obtain the result of :math:`AB^T`.
 
     Left and right inputs must be 3-dimensional tensors of size
-    :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the total length,
+    :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the total length,
     :math:`N` is the total number of processes available and :math:`D`, the
     dimension of the sequence. The result of this function is a tensor of size
-    :math:`1 \times \frac{T}{N} \times T`, that contain the result chunk for
+    :math:`* \times \frac{T}{N} \times T`, that contain the result chunk for
     each process of the resulting operation.
 
     Inputs
     ------
     left: Tensor
         :math:`A` in :math:`AB^T`, must be of size
-        :math:`1 \times \frac{T}{N} \times D`.
+        :math:`* \times \frac{T}{N} \times D`.
     right: Tensor
         :math:`B` in :math:`AB^T`, must be of size
-        :math:`1 \times \frac{T}{N} \times D`.
+        :math:`* \times \frac{T}{N} \times D`.
     offset: int
         Number of chunks to communicate during each distributed step, it must
         be a factor of :math:`\frac{T}{N}`. This factor should be modified in
@@ -63,29 +63,28 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
     result: Tensor
         For each process, this function computes the corresponding segment
         of the operation :math:`A^T B`, of size
-        :math:`1 \times \frac{T}{N} \times T`.
+        :math:`* \times \frac{T}{N} \times T`.
     """
     synchronize()
-    dims = left.dim()
-    assert dims <= 3 and dims >= 2
-
-    rows = left.size(dims - 2)
+    rows = left.size(-2)
     world_size = get_world_size()
     total_rows = rows * world_size
-    result = torch.empty((world_size, left.size(1), rows),
-                         device=left.device)
+
+    prefix_size = tuple(left.size())[:-2]
+    size = (world_size, left.size(-2), rows)
+    size = prefix_size + size
+    result = torch.empty(size, device=left.device)
+    final_size = prefix_size + (left.size(-2), total_rows)
 
     for row in range(0, rows, offset):
         end_bound = row + offset
-        current_row = (right[:, row:end_bound]
-                       if dims == 3 else right[row:end_bound])
+        current_row = right[..., row:end_bound, :]
         # [r0[row:end_bound], r1[row:end_bound], ..., rworld[row:end_bound]]
         # all_rows: world_size x offset x dim
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
         partial_results = left.matmul(all_rows.transpose(-1, -2))
-        result[:, :, row:end_bound] = partial_results
-    result = result.transpose(0, 1).reshape(left.size(0),
-                                            left.size(1), total_rows)
+        result[..., row:end_bound] = partial_results
+    result = result.transpose(-3, -2).reshape(*final_size)
     return result
 
 
@@ -95,28 +94,28 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
     Multiply two sequence tensors to obtain the result of :math:`A^{T} B`.
 
     Left and right inputs must be 3-dimensional tensors, where the first one
-    must be of size :math:`1 \times \frac{T}{N} \times T` and the second one of
-    size , where :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the
+    must be of size :math:`* \times \frac{T}{N} \times T` and the second one of
+    size , where :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the
     total length,  :math:`N` is the total number of processes available and
     :math:`D`, the dimension of the sequence. The result of this function is a
-    tensor of size :math:`1 \times \frac{T}{N} \times D`, that contain the
+    tensor of size :math:`* \times \frac{T}{N} \times D`, that contain the
     result chunk for each process of the resulting operation.
 
     Inputs
     ------
     left: Tensor
         :math:`A` in :math:`A^T B`, must be of size
-        :math:`1 \times \frac{T}{N} \times T`
+        :math:`* \times \frac{T}{N} \times T`
     right: Tensor
         :math:`B` in :math:`A^T B`, must be of size
-        :math:`1 \times \frac{T}{N} \times D`
+        :math:`* \times \frac{T}{N} \times D`
 
     Returns
     -------
     result: Tensor
         For each process, this function computes the corresponding segment
         of the operation :math:`A^T B`, of size
-        :math:`1 \times \frac{T}{N} \times D`
+        :math:`* \times \frac{T}{N} \times D`
     """
     dims = left.dim()
     assert dims <= 3 and dims >= 2
@@ -126,9 +125,7 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
 
     split_size = cols // world_size
     splits = left.split(split_size, -1)
-    size = ((left.size(0), left.size(1), right.size(-1))
-            if dims == 3 else (left.size(0), right.size(-1)))
-    rank_block = torch.zeros(*size, device=left.device)
+    rank_block = None
 
     synchronize()
     for r in range(world_size):
@@ -157,21 +154,21 @@ def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
     Multiply two sequence tensors to obtain the result of :math:`AB`.
 
     Left and right inputs must be 3-dimensional tensors, where the first one
-    must be of size :math:`1 \times \frac{T}{N} \times T` and the second one of
-    size , where :math:`1 \times \frac{T}{N} \times D`, where :math:`T` is the
+    must be of size :math:`* \times \frac{T}{N} \times T` and the second one of
+    size , where :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the
     total length,  :math:`N` is the total number of processes available and
     :math:`D`, the dimension of the sequence. The result of this function is a
-    tensor of size :math:`1 \times \frac{T}{N} \times D`, that contain the
+    tensor of size :math:`* \times \frac{T}{N} \times D`, that contain the
     result chunk for each process of the resulting operation.
 
     Inputs
     ------
     left: Tensor
         :math:`A` in :math:`AB`, must be of size
-        :math:`1 \times \frac{T}{N} \times T`
+        :math:`* \times \frac{T}{N} \times T`
     right: Tensor
         :math:`B` in :math:`AB`, must be of size
-        :math:`1 \times \frac{T}{N} \times D`
+        :math:`* \times \frac{T}{N} \times D`
 
     Returns
     -------
@@ -187,9 +184,9 @@ def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
 
     total_cols = right.size(-1)
     split_size = cols // world_size
-    splits = torch.cat(left.split(split_size, -1), dim=0)
-
-    size = (world_size, left.size(1), total_cols)
+    splits = torch.stack(left.split(split_size, -1), dim=0)
+    left_sizes = tuple(left.size())
+    size = (world_size,) + left_sizes[:-2] + (left.size(-2), total_cols)
     rank_block = torch.empty(*size, device=left.device)
 
     total_cols = right.size(-1)
@@ -198,9 +195,10 @@ def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
         end_bound = current_col + offset
         col = right[..., current_col:end_bound]
         col = col.contiguous()
-        all_cols = hvd.allgather(col, name=f'matmul_all_{current_col}')
+        all_cols = hvd.allgather(col.unsqueeze(0),
+                                 name=f'matmul_all_{current_col}')
         # all_cols: torch.size([world_size, right.size(1), offset])
         block_result = torch.matmul(splits, all_cols)
         rank_block[..., current_col:end_bound] = block_result
-    result = rank_block.sum(dim=0).unsqueeze(0)
+    result = rank_block.sum(dim=0)
     return result

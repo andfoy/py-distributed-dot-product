@@ -10,10 +10,14 @@ from distributed_dot_product.utils.comm import get_rank, get_world_size
 from distributed_dot_product.module import DistributedDotProductAttn
 
 torch.manual_seed(111)
-torch.cuda.set_device(get_rank())
 
-device = torch.device('cuda')
-module = DistributedDotProductAttn(768, num_heads=1, offset=64)
+device = torch.device('cpu')
+
+if torch.cuda.is_available():
+    torch.cuda.set_device(get_rank())
+    device = torch.device('cuda')
+
+module = DistributedDotProductAttn(768, num_heads=2, offset=64)
 module.to(device)
 
 criterion = nn.MSELoss()

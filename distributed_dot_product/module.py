@@ -47,9 +47,9 @@ class DistributedDotProductAttn(nn.Module):
                                    self.dim)
             values = values.view(*values.size()[:-1], self.num_heads, self.dim)
 
-            keys = keys.tranpose(-2, -3)
-            values = values.tranpose(-2, -3)
-            queries = queries.tranpose(-2, -3)
+            keys = keys.transpose(-2, -3)
+            values = values.transpose(-2, -3)
+            queries = queries.transpose(-2, -3)
 
         projection = RightTransposeMultiplication.apply(keys, queries,
                                                         self.offset)
