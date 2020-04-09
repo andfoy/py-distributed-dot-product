@@ -78,7 +78,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
 
     for row in range(0, rows, offset):
         end_bound = row + offset
-        current_row = right[..., row:end_bound, :]
+        current_row = right[..., row:end_bound, :].contiguous()
         # [r0[row:end_bound], r1[row:end_bound], ..., rworld[row:end_bound]]
         # all_rows: world_size x offset x dim
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
@@ -178,7 +178,6 @@ def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
         :math:`1 \times \frac{T}{N} \times D`
     """
     dims = left.dim()
-    assert dims <= 3 and dims >= 2
     cols = left.size(dims - 1)
     world_size = get_world_size()
 
