@@ -31,6 +31,15 @@ def create_tensor(*sizes):
     return seq_tensor
 
 
+def create_multi_tensor(time, dimension, world_size, heads=2, split=False):
+    tensor = create_tensor(1, time, dimension)
+    tensor = tensor.view(1, time, heads, dimension // heads).transpose(-2, -3)
+    if split:
+        tensor = tensor.view(heads, world_size, time // world_size,
+                             dimension // heads).transpose(0, 1)
+    return tensor
+
+
 MODES = {
     'NT': ((lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
             lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
@@ -38,14 +47,16 @@ MODES = {
             lambda world_size: create_tensor(world_size, LENGTH, DIM)),
            (lambda x, y: torch.matmul(x, y.transpose(-1, -2)),
             functools.partial(distributed_matmul_nt, offset=2))),
-    'NT-4D': ((lambda world_size: create_tensor(1, 2, LENGTH * world_size,
-                                                DIM // 2),
-               lambda world_size: create_tensor(1, 2, LENGTH * world_size,
-                                                DIM // 2),
-               lambda world_size: create_tensor(world_size, 2, LENGTH,
-                                                DIM // 2),
-               lambda world_size: create_tensor(world_size, 2, LENGTH,
-                                                DIM // 2)),
+    'NT-4D': ((lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                      DIM, 1),
+               lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                      DIM, 1),
+               lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                      DIM, world_size,
+                                                      split=True),
+               lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                      DIM, world_size,
+                                                      split=True)),
               (lambda x, y: torch.matmul(x, y.transpose(-1, -2)),
                functools.partial(distributed_matmul_nt, offset=2))),
     'TN': ((lambda world_size: create_tensor(1, LENGTH * world_size,

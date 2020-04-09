@@ -118,7 +118,6 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
         :math:`* \times \frac{T}{N} \times D`
     """
     dims = left.dim()
-    assert dims <= 3 and dims >= 2
     cols = left.size(-1)
     world_size = get_world_size()
     rank = get_rank()
