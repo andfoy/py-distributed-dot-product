@@ -25,6 +25,9 @@ def measure(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         start_time = time.time()
+        if DEBUG:
+            print(f'{f.__name__} - Left: {args[0].size()}, '
+                  f'Right: {args[1].size()}')
         result = f(*args, **kwargs)
         if DEBUG:
             print(f'{f.__name__} elapsed time: {time.time() - start_time}')
