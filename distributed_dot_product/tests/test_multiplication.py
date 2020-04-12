@@ -40,6 +40,13 @@ def create_multi_tensor(time, dimension, world_size, heads=2, split=False):
     return tensor
 
 
+def create_multi_tensor_nh(world_size, heads, *sizes):
+    tensor = create_tensor(*sizes)
+    tensor = tensor.view(heads, world_size, -1, tensor.size(-1))
+    tensor = tensor.transpose(1, 2)
+    return tensor
+
+
 MODES = {
     'NT': ((lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
             lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
@@ -67,12 +74,13 @@ MODES = {
             lambda world_size: create_tensor(world_size, LENGTH, DIM)),
            (lambda x, y: torch.matmul(x.transpose(-1, -2), y),
             distributed_matmul_tn)),
-    'TN-4D': ((lambda world_size: create_tensor(1, 2, LENGTH * world_size,
+    'TN-4D': ((lambda world_size: create_tensor(2, LENGTH * world_size,
                                                 LENGTH * world_size),
                lambda world_size: create_multi_tensor(LENGTH * world_size,
                                                       DIM, 1),
-               lambda world_size: create_tensor(world_size, 2, LENGTH,
-                                                LENGTH * world_size),
+               lambda world_size: create_multi_tensor_nh(world_size, 2, 2,
+                                                         LENGTH * world_size,
+                                                         LENGTH * world_size),
                lambda world_size: create_multi_tensor(LENGTH * world_size,
                                                       DIM, world_size,
                                                       split=True)),
