@@ -43,7 +43,7 @@ def create_multi_tensor(time, dimension, world_size, heads=2, split=False):
 def create_multi_tensor_nh(world_size, heads, *sizes):
     tensor = create_tensor(*sizes)
     tensor = tensor.view(heads, world_size, -1, tensor.size(-1))
-    tensor = tensor.transpose(1, 2)
+    tensor = tensor.transpose(0, 1)
     return tensor
 
 
