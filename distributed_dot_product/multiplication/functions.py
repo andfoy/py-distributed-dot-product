@@ -37,7 +37,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
     """
     Multiply two sequence tensors to obtain the result of :math:`AB^T`.
 
-    Left and right inputs must be 3-dimensional tensors of size
+    Left and right inputs can be N-dimensional tensors of size
     :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the total length,
     :math:`N` is the total number of processes available and :math:`D`, the
     dimension of the sequence. The result of this function is a tensor of size
@@ -93,7 +93,7 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
     """
     Multiply two sequence tensors to obtain the result of :math:`A^{T} B`.
 
-    Left and right inputs must be 3-dimensional tensors, where the first one
+    Left and right inputs can be N-dimensional tensors, where the first one
     must be of size :math:`* \times \frac{T}{N} \times T` and the second one of
     size , where :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the
     total length,  :math:`N` is the total number of processes available and
@@ -151,7 +151,7 @@ def distributed_matmul_all(left: Tensor, right: Tensor, offset=32) -> Tensor:
     """
     Multiply two sequence tensors to obtain the result of :math:`AB`.
 
-    Left and right inputs must be 3-dimensional tensors, where the first one
+    Left and right inputs can be N-dimensional tensors, where the first one
     must be of size :math:`* \times \frac{T}{N} \times T` and the second one of
     size , where :math:`* \times \frac{T}{N} \times D`, where :math:`T` is the
     total length,  :math:`N` is the total number of processes available and

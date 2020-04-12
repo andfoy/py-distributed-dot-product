@@ -93,7 +93,19 @@ MODES = {
                                                LENGTH * world_size),
               lambda world_size: create_tensor(world_size, LENGTH, DIM)),
              (lambda x, y: torch.matmul(x, y),
-              functools.partial(distributed_matmul_all, offset=2)))
+              functools.partial(distributed_matmul_all, offset=2))),
+    'FULL-4D': ((lambda world_size: create_tensor(2, LENGTH * world_size,
+                                                  LENGTH * world_size),
+                 lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                        DIM, 1),
+                 lambda world_size: create_multi_tensor_nh(
+                     world_size, 2, 2, LENGTH * world_size,
+                     LENGTH * world_size),
+                 lambda world_size: create_multi_tensor(LENGTH * world_size,
+                                                        DIM, world_size,
+                                                        split=True)),
+                (lambda x, y: torch.matmul(x, y),
+                 functools.partial(distributed_matmul_all, offset=2)))
 }
 
 
