@@ -74,8 +74,9 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
     total_rows = rows * world_size
 
     prefix_size = tuple(left.size())[:-2]
-    size = (world_size, left.size(-2), rows)
-    size = prefix_size + size
+    size = (left.size(-2), right.size(-2))
+    size = (world_size,) + prefix_size + size
+    # (world_size, ...dims, T/N, T/N)
     result = torch.empty(size, device=left.device)
     final_size = prefix_size + (left.size(-2), total_rows)
 
@@ -83,11 +84,12 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
         end_bound = row + offset
         current_row = right[..., row:end_bound, :].contiguous()
         # [r0[row:end_bound], r1[row:end_bound], ..., rworld[row:end_bound]]
-        # all_rows: world_size x offset x dim
+        # all_rows: world_size x ... x offset x dim
+        current_row = current_row.unsqueeze(0)
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
         partial_results = left.matmul(all_rows.transpose(-1, -2))
         result[..., row:end_bound] = partial_results
-    result = result.unsqueeze(-2).transpose(1, -2).reshape(*final_size)
+    result = result.unsqueeze(-2).transpose(0, -2).reshape(*final_size)
     return result
 
 

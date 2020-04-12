@@ -146,5 +146,5 @@ def test_distributed_nt(tensor_fixture):
         gather_result = gather_result.view(1, collapsed, -1)
     else:
         gather_result = gather_result.transpose(0, 1).reshape(
-            1, gather_result.size(0), -1, gather_result.size(-1))
+            1, gather_result.size(1), -1, gather_result.size(-1))
     assert (gt_result == gather_result).all()
