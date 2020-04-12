@@ -85,7 +85,7 @@ MODES = {
                                                       DIM, world_size,
                                                       split=True)),
               (lambda x, y: torch.matmul(x.transpose(-1, -2), y),
-               distributed_matmul_nt)),
+               distributed_matmul_tn)),
     'FULL': ((lambda world_size: create_tensor(1, LENGTH * world_size,
                                                LENGTH * world_size),
               lambda world_size: create_tensor(1, LENGTH * world_size, DIM),
