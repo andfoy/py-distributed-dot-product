@@ -84,7 +84,7 @@ def distributed_matmul_nt(left: Tensor, right: Tensor, offset=32) -> Tensor:
         all_rows = hvd.allgather(current_row, name=f'scatter_rows_{row}')
         partial_results = left.matmul(all_rows.transpose(-1, -2))
         result[..., row:end_bound] = partial_results
-    result = result.transpose(-3, -2).reshape(*final_size)
+    result = result.unsqueeze(-2).transpose(1, -2).reshape(*final_size)
     return result
 
 
@@ -117,7 +117,6 @@ def distributed_matmul_tn(left: Tensor, right: Tensor) -> Tensor:
         of the operation :math:`A^T B`, of size
         :math:`* \times \frac{T}{N} \times D`
     """
-    dims = left.dim()
     cols = left.size(-1)
     world_size = get_world_size()
     rank = get_rank()

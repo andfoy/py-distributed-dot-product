@@ -110,6 +110,10 @@ def test_distributed_nt(tensor_fixture):
     gt_result = gt_fn(*gt_tensors)
     test_result = test_fn(*test_tensors)
     gather_result = hvd.allgather(test_result)
-    collapsed = gather_result.size(0) * gather_result.size(1)
-    gather_result = gather_result.view(1, collapsed, -1)
+    if gather_result.dim() == 3:
+        collapsed = gather_result.size(0) * gather_result.size(1)
+        gather_result = gather_result.view(1, collapsed, -1)
+    else:
+        gather_result = gather_result.transpose(0, 1).reshape(
+            1, gather_result.size(0), -1, gather_result.size(-1))
     assert (gt_result == gather_result).all()
