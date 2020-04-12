@@ -71,7 +71,7 @@ MODES = {
                                                 LENGTH * world_size),
                lambda world_size: create_multi_tensor(LENGTH * world_size,
                                                       DIM, 1),
-               lambda world_size: create_tensor(1, 2, LENGTH,
+               lambda world_size: create_tensor(world_size, 2, LENGTH,
                                                 LENGTH * world_size),
                lambda world_size: create_multi_tensor(LENGTH * world_size,
                                                       DIM, world_size,
