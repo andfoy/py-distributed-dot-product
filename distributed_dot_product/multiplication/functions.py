@@ -18,7 +18,7 @@ from distributed_dot_product.utils.comm import (
 # Distributed imports
 import horovod.torch as hvd
 
-DEBUG = bool(os.environ.get('DISTRIBUTED_DOT_DEBUG', 0))
+DEBUG = bool(int(os.environ.get('DISTRIBUTED_DOT_DEBUG', 0)))
 
 
 def measure(f):

@@ -124,14 +124,8 @@ def tensor_fixture(request, distributed_fixture):
     tensor_fn, funcs = MODES[mode]
     tensors = [f(world_size) for f in tensor_fn]
     gt_left, gt_right, test_left, test_right = tensors
-    print(f'GT Left: {gt_left}')
-    print(f'GT Right: {gt_right}')
-    print(f'Test Left (C): {test_left}')
-    print(f'Test Right (C): {test_right}')
     test_left = test_left[rank].unsqueeze(0)
     test_right = test_right[rank].unsqueeze(0)
-    print(f'Test Left: {test_left}')
-    print(f'Test Right: {test_right}')
     return (gt_left, gt_right), (test_left, test_right), funcs
 
 

@@ -59,5 +59,6 @@ class DistributedDotProductAttn(nn.Module):
         outputs = FullMultiplication.apply(attn, values, self.offset)
         if self.num_heads > 1:
             outputs = outputs.transpose(-3, -2)
-            outputs = outputs.view(*outputs.size()[:-2], self.value_dim)
+            outputs = outputs.reshape(*outputs.size()[:-2], self.value_dim)
+        outputs = self.composition(outputs)
         return outputs
