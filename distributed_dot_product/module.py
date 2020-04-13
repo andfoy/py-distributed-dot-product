@@ -13,7 +13,8 @@ import horovod.torch as hvd
 
 # Local imports
 from distributed_dot_product.multiplication.ops import (
-    RightTransposeMultiplication, FullMultiplication)
+    RightTransposeMultiplication, FullMultiplication
+)
 
 hvd.init()
 

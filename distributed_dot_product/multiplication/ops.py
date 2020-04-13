@@ -4,7 +4,7 @@
 """Distributed multiplication autograd definitions."""
 
 # Standard lib imports
-from typing import Any, Callable, Union, Tuple, Sequence, Optional
+from typing import Any
 
 # PyTorch imports
 from torch import Tensor
@@ -12,8 +12,7 @@ import torch.autograd as autograd
 
 # Local imports
 from distributed_dot_product.multiplication.functions import (
-    distributed_matmul_nt, distributed_matmul_tn, distributed_matmul_block,
-    distributed_matmul_all
+    distributed_matmul_nt, distributed_matmul_tn, distributed_matmul_all
 )
 
 
