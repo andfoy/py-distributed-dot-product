@@ -8,14 +8,13 @@ import ast
 import os
 
 # Third party imports
-from setuptools import Extension, find_packages, setup
-
+from setuptools import find_packages, setup
 
 # yapf: enable
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 
-def get_version(module='distributed_transformer'):
+def get_version(module='distributed_dot_product'):
     """Get version from text file and avoids importing the module."""
     with open(os.path.join(HERE, module, '__init__.py'), 'r') as f:
         data = f.read()
@@ -28,67 +27,38 @@ def get_version(module='distributed_transformer'):
     return version
 
 
-try:
-    include_dirs = [os.environ['LIBRARY_INC']]
-except KeyError:
-    include_dirs = []
-try:
-    library_dirs = [os.environ['LIBRARY_LIB']]
-except KeyError:
-    library_dirs = []
-
-
-ext_options = {}
-cythonize_options = {}
-if os.environ.get('CYTHON_COVERAGE'):
-    cythonize_options['compiler_directives'] = {'linetrace': True}
-    cythonize_options['annotate'] = True
-    ext_options['define_macros'] = [
-        ('CYTHON_TRACE', '1'), ('CYTHON_TRACE_NOGIL', '1')
-    ]
-
-try:
-    from torch.utils import cpp_extension
-    # ext_modules = cythonize([
-    #     Extension(
-    #         "winpty.cywinpty",
-    #         sources=["winpty/cywinpty.pyx"],
-    #         libraries=["winpty"],
-    #         include_dirs=include_dirs,
-    #         library_dirs=library_dirs,
-    #         **ext_options
-    #     )],
-    #     **cythonize_options
-    # )
-    ext_modules = [
-        cpp_extension.CppExtension('distributed_transformer',
-                                   ['distributed_transformer/cpp/dist_transf.cpp'])
-    ]
-except ImportError:
-    ext_modules = []
+def get_description():
+    """Get long description."""
+    with open(os.path.join(HERE, 'README.md'), 'r') as f:
+        data = f.read()
+    return data
 
 
 setup(
-    name='pywinpty',
+    name='distributed-dot-product',
     version=get_version(),
-    keywords=['winpty', 'pty', 'pseudoterminal', 'pseudotty'],
-    url='https://github.com/spyder-ide/pywinpty',
+    keywords=['transformer', 'dot', 'product', 'pytorch'],
+    url='https://github.com/andfoy/py-distributed-dot-product',
     license='MIT',
     author='Edgar Andrés Margffoy-Tuay',
     author_email='andfoy@gmail.com',
-    description='Python bindings for the winpty library',
-    ext_modules=ext_modules,
-    cmdclass={'build_ext': cpp_extension.BuildExtension},
+    description='MPI-based implementation for distributing the dot product '
+                'attention operation',
+    long_description=get_description(),
+    long_description_content_type='text/markdown',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    setup_requires=['torch'],
+    setup_requires=['torch', 'horovod'],
     package_data=dict(winpty=['*.so', '*.a']),
     install_requires=['backports.shutil_which;python_version<"3.0"'],
     classifiers=[
-        'Development Status :: 4 - Beta', 'Intended Audience :: Developers',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Developers',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6'
+        'Operating System :: MacOS',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ]
 )
