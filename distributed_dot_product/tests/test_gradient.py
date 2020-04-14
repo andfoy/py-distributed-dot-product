@@ -54,9 +54,9 @@ def device_fixture(request):
 
 
 @pytest.mark.parametrize('tensors,models,device', [
-    pytest.lazy_fixture('tensor_fixture'),
-    pytest.lazy_fixture('model_fixture'),
-    pytest.lazy_fixture('device_fixture')])
+    (pytest.lazy_fixture('tensor_fixture'),
+     pytest.lazy_fixture('model_fixture'),
+     pytest.lazy_fixture('device_fixture'))])
 def test_gradient(tensors, models, device):
     k, q, mask = tensors
     k = k.to(device)
