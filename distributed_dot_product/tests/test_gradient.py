@@ -2,9 +2,6 @@
 
 """Tests for distributed multiplication operators (gradients)."""
 
-# Standard library imports
-import functools
-
 # PyTest imports
 import pytest
 
