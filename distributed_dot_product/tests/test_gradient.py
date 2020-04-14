@@ -32,7 +32,7 @@ def tensor_fixture():
     y = torch.rand(1, LENGTH, DIM)
     y = y.requires_grad_(True)
     mask = torch.zeros(1, LENGTH, LENGTH * get_world_size())
-    return x, y, mask
+    return x, y, mask.bool()
 
 
 @pytest.fixture(params=[1, 4])
@@ -78,6 +78,6 @@ def test_gradient(tensors, models, device):
     k_gt = k_gt.requires_grad_(True)
     q_gt = q_gt.requires_grad_(True)
     gt_mask = torch.zeros(1, k_gt.size(1), q_gt.size(1), device=k_gt.device)
-    gt_out = gt_model(k_gt, q_gt, k_gt, gt_mask)
+    gt_out = gt_model(k_gt, q_gt, k_gt, gt_mask.bool())
     gt_out.backward()
     assert False
