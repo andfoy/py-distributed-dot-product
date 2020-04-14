@@ -73,22 +73,27 @@ def test_gradient(tensors, models, device):
     gt_model = gt_model.to(device)
 
     distr_out = model(k, q, k, mask)
-    distr_out.sum().backward()
-    print(distr_out.sum())
+    reduction = distr_out.sum()
+    reduction.backward()
+    print(reduction)
 
     k_gt = hvd.allgather(k.detach())
     q_gt = hvd.allgather(q.detach())
 
-    print(k.grad)
-    #print(k_gt)
     k_gt = k_gt.view(1, -1, k_gt.size(-1))
-    #print(k_gt)
     q_gt = q_gt.view(1, -1, q_gt.size(-1))
     k_gt = k_gt.requires_grad_(True)
     q_gt = q_gt.requires_grad_(True)
     gt_mask = torch.zeros(1, k_gt.size(1), q_gt.size(1), device=k_gt.device)
+
     gt_out = gt_model(k_gt, q_gt, k_gt, gt_mask.bool())
-    gt_out.sum().backward()
-    print(gt_out.sum())
+    gt_reduction = gt_out.sum()
+    gt_reduction.backward()
+
+    print(gt_reduction)
+    print(k.grad)
+    k_grad = hvd.allgather(k.grad)
+    k_grad = k_grad.view(1, -1, k_grad.size(-1))
+    print(k_grad)
     print(k_gt.grad)
     assert False
