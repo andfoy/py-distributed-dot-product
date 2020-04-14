@@ -26,12 +26,20 @@ if torch.cuda.is_available():
 
 
 @pytest.fixture(scope='function')
-def tensor_fixture():
+def tensor_fixture(request):
     x = torch.rand(1, LENGTH, DIM)
     x = x.requires_grad_(True)
     y = torch.rand(1, LENGTH, DIM)
     y = y.requires_grad_(True)
     mask = torch.zeros(1, LENGTH, LENGTH * get_world_size())
+
+    def teardown():
+        del x
+        del y
+        del mask
+        torch.cuda.empty_cache()
+
+    request.addfinalizer(teardown)
     return x, y, mask.bool()
 
 
@@ -46,6 +54,13 @@ def model_fixture(request):
     gt_model.queries.weight.data = model.queries.weight.data.clone()
     gt_model.values.weight.data = model.values.weight.data.clone()
     gt_model.composition.weight.data = model.composition.weight.data.clone()
+
+    def teardown():
+        del model
+        del gt_model
+        torch.cuda.empty_cache()
+
+    request.addfinalizer(teardown)
     return model, gt_model
 
 
