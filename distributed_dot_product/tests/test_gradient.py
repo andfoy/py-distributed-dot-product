@@ -93,7 +93,6 @@ def test_gradient(tensors, models, device):
     distr_out = model(k, q, k, mask)
     reduction = distr_out.sum()
     reduction.backward()
-    print(reduction)
 
     k_gt = hvd.allgather(k.detach())
     q_gt = hvd.allgather(q.detach())
@@ -108,12 +107,11 @@ def test_gradient(tensors, models, device):
     gt_reduction = gt_out.sum()
     gt_reduction.backward()
 
-    print(gt_reduction)
-    # print(k.grad)
     k_grad = hvd.allgather(k.grad)
     k_grad = k_grad.view(1, -1, k_grad.size(-1))
-    print(k_grad)
-    print('--------------------')
-    print(k_gt.grad)
-    print((k_gt.grad - k_grad))
+
+    q_grad = hvd.allgather(q.grad)
+    q_grad = q_grad.view(1, -1, q_grad.size(-1))
+
     assert torch.allclose(k_grad, k_gt.grad, atol=1e-5)
+    assert torch.allclose(q_grad, q_gt.grad, atol=1e-5)
