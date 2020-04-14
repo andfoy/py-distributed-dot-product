@@ -115,3 +115,10 @@ def test_gradient(tensors, models, device):
 
     assert torch.allclose(k_grad, k_gt.grad, atol=1e-5)
     assert torch.allclose(q_grad, q_gt.grad, atol=1e-5)
+
+    for ((gt_name, gt_param), (name, param)) in zip(
+            model.named_parameters(), gt_model.named_parameters()):
+        assert gt_name == name
+        gt_grad = hvd.allreduce(gt_param.grad)
+        grad = param.grad
+        assert torch.allclose(gt_grad, grad, atol=1e-5)
