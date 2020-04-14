@@ -34,6 +34,7 @@ def tensor_fixture(request):
     mask = torch.zeros(1, LENGTH, LENGTH * get_world_size())
 
     def teardown():
+        nonlocal x, y, mask
         del x
         del y
         del mask
@@ -56,6 +57,7 @@ def model_fixture(request):
     gt_model.composition.weight.data = model.composition.weight.data.clone()
 
     def teardown():
+        nonlocal model, gt_model
         del model
         del gt_model
         torch.cuda.empty_cache()
