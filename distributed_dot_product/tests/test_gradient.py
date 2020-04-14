@@ -25,7 +25,7 @@ if torch.cuda.is_available():
     torch.cuda.set_device(get_rank())
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def tensor_fixture():
     x = torch.rand(1, LENGTH, DIM)
     x = x.requires_grad_(True)
@@ -35,7 +35,7 @@ def tensor_fixture():
     return x, y, mask.bool()
 
 
-@pytest.fixture(params=[1, 4])
+@pytest.fixture(scope='function', params=[1, 4])
 def model_fixture(request):
     heads = request.param
     model = DistributedDotProductAttn(256, 256, 256, num_heads=heads)
@@ -49,7 +49,7 @@ def model_fixture(request):
     return model, gt_model
 
 
-@pytest.fixture(params=['cpu', 'cuda'])
+@pytest.fixture(scope='function', params=['cpu', 'cuda'])
 def device_fixture(request):
     mode = request.param
     if mode == 'cuda' and not torch.cuda.is_available():
@@ -91,9 +91,11 @@ def test_gradient(tensors, models, device):
     gt_reduction.backward()
 
     print(gt_reduction)
-    print(k.grad)
+    # print(k.grad)
     k_grad = hvd.allgather(k.grad)
     k_grad = k_grad.view(1, -1, k_grad.size(-1))
     print(k_grad)
+    print('--------------------')
     print(k_gt.grad)
-    assert False
+    print((k_gt.grad - k_grad))
+    assert torch.allclose(k_grad, k_gt.grad, atol=1e-5)
