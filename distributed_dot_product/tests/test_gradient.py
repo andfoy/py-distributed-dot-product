@@ -41,6 +41,11 @@ def model_fixture(request):
     model = DistributedDotProductAttn(256, 256, 256, num_heads=heads)
     gt_model = DistributedDotProductAttn(256, 256, 256, num_heads=heads,
                                          distributed=False)
+    hvd.broadcast_parameters(model.state_dict(), root_rank=0)
+    gt_model.keys.weight.data = model.keys.weight.data.clone()
+    gt_model.queries.weight.data = model.queries.weight.data.clone()
+    gt_model.values.weight.data = model.values.weight.data.clone()
+    gt_model.composition.weight.data = model.composition.weight.data.clone()
     return model, gt_model
 
 
@@ -69,15 +74,21 @@ def test_gradient(tensors, models, device):
 
     distr_out = model(k, q, k, mask)
     distr_out.sum().backward()
+    print(distr_out.sum())
 
     k_gt = hvd.allgather(k.detach())
     q_gt = hvd.allgather(q.detach())
 
+    print(k.grad)
+    #print(k_gt)
     k_gt = k_gt.view(1, -1, k_gt.size(-1))
+    #print(k_gt)
     q_gt = q_gt.view(1, -1, q_gt.size(-1))
     k_gt = k_gt.requires_grad_(True)
     q_gt = q_gt.requires_grad_(True)
     gt_mask = torch.zeros(1, k_gt.size(1), q_gt.size(1), device=k_gt.device)
     gt_out = gt_model(k_gt, q_gt, k_gt, gt_mask.bool())
     gt_out.sum().backward()
+    print(gt_out.sum())
+    print(k_gt.grad)
     assert False

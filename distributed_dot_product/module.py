@@ -36,7 +36,7 @@ class DistributedDotProductAttn(nn.Module):
         self.keys = nn.Linear(key_dim, key_dim, bias=add_bias)
         self.queries = nn.Linear(query_dim, key_dim, bias=add_bias)
         self.values = nn.Linear(value_dim, value_dim, bias=add_bias)
-        self.composition = nn.Linear(value_dim, value_dim)
+        self.composition = nn.Linear(value_dim, value_dim, bias=add_bias)
 
     def forward(self, keys: Tensor, queries: Tensor, values: Tensor,
                 attn_mask: Tensor) -> Tensor:
