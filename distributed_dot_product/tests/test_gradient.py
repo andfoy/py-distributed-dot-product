@@ -31,7 +31,7 @@ def tensor_fixture():
     x = x.requires_grad_(True)
     y = torch.rand(1, LENGTH, DIM)
     y = y.requires_grad_(True)
-    mask = torch.zeros(1, LENGTH, LENGTH)
+    mask = torch.zeros(1, LENGTH, LENGTH * get_world_size())
     return x, y, mask
 
 
