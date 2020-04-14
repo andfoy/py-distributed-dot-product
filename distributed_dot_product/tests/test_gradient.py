@@ -28,9 +28,7 @@ if torch.cuda.is_available():
 @pytest.fixture(scope='function')
 def tensor_fixture(request):
     x = torch.rand(1, LENGTH, DIM)
-    x = x.requires_grad_(True)
     y = torch.rand(1, LENGTH, DIM)
-    y = y.requires_grad_(True)
     mask = torch.zeros(1, LENGTH, LENGTH * get_world_size())
 
     def teardown():
@@ -84,6 +82,9 @@ def test_gradient(tensors, models, device):
     k = k.to(device)
     q = q.to(device)
     mask = mask.to(device)
+
+    k = k.requires_grad_(True)
+    q = q.requires_grad_(True)
 
     model, gt_model = models
     model = model.to(device)
