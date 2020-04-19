@@ -66,6 +66,9 @@ if is_main_process():
     # initial_size = torch.cuda.memory_allocated()
     # print(f'Memory allocated by xlarge/y: {humanize.naturalsize(initial_size)}')
     result = measure(torch.matmul, xlarge, y)
+    del result
+    torch.cuda.empty_cache()
+
 
 # Benchmark TN multiplication (distributed)
 xsmall = lambda: torch.rand(1, 75000 // 3, 768, device=device)
