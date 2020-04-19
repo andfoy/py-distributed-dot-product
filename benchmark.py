@@ -29,28 +29,39 @@ if torch.cuda.is_available():
     device = torch.device('cuda')
 
 
-def measure(input_size, function, *args, **kwargs):
+def measure(input_size, function, x, y, **kwargs):
     torch.cuda.reset_max_memory_allocated()
     start_memory = torch.cuda.max_memory_allocated()
+    x = x()
+    y = y()
+    initial_size = torch.cuda.memory_allocated()
+    print(f'Memory allocated by inputs: {humanize.naturalsize(initial_size)}')
+
     start_time = time.time()
-    y = function(*args, **kwargs)
+    z = function(x, y)
     total_time = time.time() - start_time
+
     end_memory = torch.cuda.max_memory_allocated()
+
+    del x
+    del y
+    torch.cuda.empty_cache()
+    result_memory = torch.cuda.max_memory_allocated()
+
     print(f'{function.__name__} - Total time elapsed: {total_time}s')
     print(f'{function.__name__} - '
           f'Memory consumption: {humanize.naturalsize(end_memory)}')
     print(f'{function.__name__} - '
-          f'Memory consumption (No inputs): {humanize.naturalsize(
-              end_memory - input_size)}')
-    return y
+          f'Memory consumption (Result): {humanize.naturalsize(result_memory)}')
+    return z
 
 
 # Benchmark NT multiplication (local node)
 if is_main_process():
-    xlarge = torch.rand(1, 75000, 768, device=device)
-    y = xlarge.transpose(-1, -2)
-    initial_size = torch.cuda.memory_allocated()
-    print(f'Memory allocated by xlarge/y: {humanize.naturalsize(initial_size)}')
+    xlarge = lambda: torch.rand(1, 75000, 768, device=device)
+    y = lambda: torch.rand(1, 768, 75000, device=device)
+    # initial_size = torch.cuda.memory_allocated()
+    # print(f'Memory allocated by xlarge/y: {humanize.naturalsize(initial_size)}')
     result = measure(initial_size, torch.matmul, xlarge, y)
     del xlarge
     del y
@@ -58,9 +69,7 @@ if is_main_process():
     torch.cuda.empty_cache()
 
 # Benchmark TN multiplication (distributed)
-xsmall = torch.rand(1, 75000 // 3, 768, device=device)
-initial_size = torch.cuda.memory_allocated()
-print(f'Memory allocated by xsmall: {humanize.naturalsize(initial_size)}')
+xsmall = lambda: torch.rand(1, 75000 // 3, 768, device=device)
 synchronize()
 result = measure(initial_size, distributed_matmul_nt,
                  xsmall, xsmall, offset=1000)
