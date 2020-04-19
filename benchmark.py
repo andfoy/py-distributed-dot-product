@@ -29,7 +29,7 @@ if torch.cuda.is_available():
     device = torch.device('cuda')
 
 
-def measure(input_size, function, x, y, **kwargs):
+def measure(function, x, y, **kwargs):
     torch.cuda.reset_max_memory_allocated()
     start_memory = torch.cuda.max_memory_allocated()
     x = x()
@@ -62,7 +62,7 @@ if is_main_process():
     y = lambda: torch.rand(1, 768, 75000, device=device)
     # initial_size = torch.cuda.memory_allocated()
     # print(f'Memory allocated by xlarge/y: {humanize.naturalsize(initial_size)}')
-    result = measure(initial_size, torch.matmul, xlarge, y)
+    result = measure(torch.matmul, xlarge, y)
     del xlarge
     del y
     del result
@@ -71,7 +71,7 @@ if is_main_process():
 # Benchmark TN multiplication (distributed)
 xsmall = lambda: torch.rand(1, 75000 // 3, 768, device=device)
 synchronize()
-result = measure(initial_size, distributed_matmul_nt,
+result = measure(distributed_matmul_nt,
                  xsmall, xsmall, offset=1000)
 del xsmall
 del result
