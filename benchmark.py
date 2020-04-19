@@ -50,10 +50,10 @@ if is_main_process():
     del result
     torch.cuda.empty_cache()
 
-synchronize()
 # Benchmark TN multiplication (distributed)
 xsmall = torch.rand(1, 75000 // 3, 768, device=device)
-result = measure(distributed_matmul_nt, xsmall, xsmall, offset=500)
+synchronize()
+result = measure(distributed_matmul_nt, xsmall, xsmall, offset=1000)
 del xsmall
 del result
 torch.cuda.empty_cache()
