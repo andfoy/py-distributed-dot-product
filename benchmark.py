@@ -44,6 +44,7 @@ def measure(function, *args, **kwargs):
 # Benchmark NT multiplication (local node)
 if is_main_process():
     xlarge = torch.rand(1, 75000, 768, device=device)
+    print(f'Memory allocated by xlarge: {torch.cuda.memory_allocated()}')
     y = xlarge.transpose(-1, -2)
     result = measure(torch.matmul, xlarge, y)
     del xlarge
@@ -53,6 +54,7 @@ if is_main_process():
 
 # Benchmark TN multiplication (distributed)
 xsmall = torch.rand(1, 75000 // 3, 768, device=device)
+print(f'Memory allocated by xsmall: {torch.cuda.memory_allocated()}')
 synchronize()
 result = measure(distributed_matmul_nt, xsmall, xsmall, offset=1000)
 del xsmall
