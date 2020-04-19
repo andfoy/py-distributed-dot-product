@@ -8,6 +8,7 @@ each one with 24Gb of RAM.
 """
 
 import time
+import humanize
 import functools
 
 import torch
@@ -28,25 +29,29 @@ if torch.cuda.is_available():
     device = torch.device('cuda')
 
 
-def measure(function, *args, **kwargs):
+def measure(input_size, function, *args, **kwargs):
     torch.cuda.reset_max_memory_allocated()
     start_memory = torch.cuda.max_memory_allocated()
     start_time = time.time()
     y = function(*args, **kwargs)
     total_time = time.time() - start_time
     end_memory = torch.cuda.max_memory_allocated()
-    print(f'{function.__name__} - Total time elapsed: {total_time}')
+    print(f'{function.__name__} - Total time elapsed: {total_time}s')
     print(f'{function.__name__} - '
-          f'Memory consumption: {(end_memory - start_memory) / (1024.0 ** 2)}')
+          f'Memory consumption: {humanize.naturalsize(end_memory)}')
+    print(f'{function.__name__} - '
+          f'Memory consumption (No inputs): {humanize.naturalsize(
+              end_memory - input_size)}')
     return y
 
 
 # Benchmark NT multiplication (local node)
 if is_main_process():
     xlarge = torch.rand(1, 75000, 768, device=device)
-    print(f'Memory allocated by xlarge: {torch.cuda.memory_allocated()}')
     y = xlarge.transpose(-1, -2)
-    result = measure(torch.matmul, xlarge, y)
+    initial_size = torch.cuda.memory_allocated()
+    print(f'Memory allocated by xlarge/y: {humanize.naturalsize(initial_size)}')
+    result = measure(initial_size, torch.matmul, xlarge, y)
     del xlarge
     del y
     del result
@@ -54,9 +59,11 @@ if is_main_process():
 
 # Benchmark TN multiplication (distributed)
 xsmall = torch.rand(1, 75000 // 3, 768, device=device)
-print(f'Memory allocated by xsmall: {torch.cuda.memory_allocated()}')
+initial_size = torch.cuda.memory_allocated()
+print(f'Memory allocated by xsmall: {humanize.naturalsize(initial_size)}')
 synchronize()
-result = measure(distributed_matmul_nt, xsmall, xsmall, offset=1000)
+result = measure(initial_size, distributed_matmul_nt,
+                 xsmall, xsmall, offset=1000)
 del xsmall
 del result
 torch.cuda.empty_cache()
