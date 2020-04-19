@@ -46,11 +46,11 @@ def measure(function, x, y, **kwargs):
     del x
     del y
     torch.cuda.empty_cache()
-    result_memory = torch.cuda.max_memory_allocated()
+    result_memory = torch.cuda.memory_allocated()
 
     print(f'{function.__name__} - Total time elapsed: {total_time}s')
     print(f'{function.__name__} - '
-          f'Memory consumption: {humanize.naturalsize(end_memory)}')
+          f'Memory consumption (Peak): {humanize.naturalsize(end_memory)}')
     print(f'{function.__name__} - '
           f'Memory consumption (Result): {humanize.naturalsize(result_memory)}')
     return z
