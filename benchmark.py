@@ -29,8 +29,9 @@ if torch.cuda.is_available():
 
 
 def measure(function, *args, **kwargs):
-    start_time = time.time()
+    torch.cuda.reset_max_memory_allocated()
     start_memory = torch.cuda.max_memory_allocated()
+    start_time = time.time()
     y = function(*args, **kwargs)
     total_time = time.time() - start_time
     end_memory = torch.cuda.max_memory_allocated()
@@ -47,7 +48,7 @@ if is_main_process():
     result = measure(torch.matmul, xlarge, y)
     del xlarge
     del y
-    del result
+    del result500
     torch.cuda.empty_cache()
 
 # Benchmark TN multiplication (distributed)
