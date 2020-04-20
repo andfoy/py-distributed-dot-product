@@ -50,7 +50,7 @@ if is_main_process():
     result = measure(torch.matmul, xlarge, y)
     del xlarge
     del y
-    # del result
+    del result
     torch.cuda.empty_cache()
 
 # Benchmark TN multiplication (distributed)
