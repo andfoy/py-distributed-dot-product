@@ -38,7 +38,8 @@ def measure(function, *args, **kwargs):
     end_memory = torch.cuda.max_memory_allocated()
     print(f'{function.__name__} - Total time elapsed: {total_time}s')
     print(f'{function.__name__} - '
-          f'Memory consumption: {humanize.naturalsize(end_memory - start_memory)}')
+          f'Memory consumption: '
+          f'{humanize.naturalsize(end_memory - start_memory)}')
     return y
 
 
@@ -46,18 +47,26 @@ def measure(function, *args, **kwargs):
 if is_main_process():
     xlarge = torch.rand(1, 75000, 768, device=device)
     y = xlarge.transpose(-1, -2)
-    print(f'Memory allocated by xlarge/y: {humanize.naturalsize(torch.cuda.memory_allocated())}')
+    print(f'Memory allocated by xlarge/y: '
+          f'{humanize.naturalsize(torch.cuda.memory_allocated())}')
     result = measure(torch.matmul, xlarge, y)
     del xlarge
     del y
+    torch.cuda.empty_cache()
+    print(f'matmul_nt - Output memory consumption: '
+          f'{humanize.naturalsize(torch.cuda.memory_allocated())}')
     del result
     torch.cuda.empty_cache()
 
 # Benchmark TN multiplication (distributed)
 xsmall = torch.rand(1, 75000 // 3, 768, device=device)
-print(f'Memory allocated by xsmall: {humanize.naturalsize(torch.cuda.memory_allocated())}')
+print(f'Memory allocated by xsmall: '
+      f'{humanize.naturalsize(torch.cuda.memory_allocated())}')
 synchronize()
 result = measure(distributed_matmul_nt, xsmall, xsmall, offset=1000)
 del xsmall
-# del result
+torch.cuda.empty_cache()
+print(f'distributed_matmul_nt - Output memory consumption: '
+      f'{humanize.naturalsize(torch.cuda.memory_allocated())}')
+del result
 torch.cuda.empty_cache()
