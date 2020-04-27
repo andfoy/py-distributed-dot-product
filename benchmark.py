@@ -109,6 +109,6 @@ if is_main_process():
         'distributed_output_memory': avg_output_memory
     }
     values.append(output)
-    json.dump(output, open(NT_FILE, 'w'))
+    json.dump(values, open(NT_FILE, 'w'))
 
 synchronize()
