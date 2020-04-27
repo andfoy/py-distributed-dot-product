@@ -27,7 +27,7 @@ comm = MPI.COMM_WORLD
 NT_FILE = 'nt_benchmark.json'
 
 values = []
-if os.exists(NT_FILE):
+if osp.exists(NT_FILE):
     values = json.load(open(NT_FILE, 'r'))
 
 torch.set_grad_enabled(False)
