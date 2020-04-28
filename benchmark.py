@@ -182,7 +182,7 @@ def all_benchmark():
         torch.cuda.empty_cache()
 
     # Benchmark all multiplication (distributed)
-    xsmall = torch.rand(1, 75000 // 3, 25000, device=device)
+    xsmall = torch.rand(1, 75000 // 3, 75000, device=device)
     ysmall = torch.rand(1, 75000 // 3, 768, device=device)
     dist_input_size = torch.cuda.memory_allocated()
     print(f'Memory allocated by xsmall/ysmall: '
