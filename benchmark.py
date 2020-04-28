@@ -239,3 +239,7 @@ def main():
         values.append(output)
         json.dump(values, open(NT_FILE, 'w'))
     synchronize()
+
+
+if __name__ == '__main__':
+    main()
