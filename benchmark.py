@@ -238,7 +238,7 @@ def main():
         }
 
         values.append(output)
-        json.dump(values, open(NT_FILE, 'w'))
+        json.dump(values, open(args.file, 'w'))
     synchronize()
 
 
