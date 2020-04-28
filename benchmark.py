@@ -112,8 +112,9 @@ def nt_benchmark():
         avg_peak_memory = sum(all_peak_memory) / len(all_peak_memory)
         avg_output_memory = sum(all_output_memory) / len(all_output_memory)
 
-        return (input_memory, op_time, peak_memory, avg_input_size,
-                avg_op_time, avg_peak_memory, avg_output_memory)
+        return (input_memory, output_memory, op_time, peak_memory,
+                avg_input_size, avg_op_time, avg_peak_memory,
+                avg_output_memory)
 
 
 def all_benchmark():
@@ -175,7 +176,7 @@ def tn_benchmark():
     # Benchmark tn multiplication (local node)
     if is_main_process():
         xlarge = torch.rand(1, 75000 // args.scale, 75000 // args.scale,
-                            device=device).transpose(-1, -2)
+                            device=device)
         y = torch.rand(1, 75000 // args.scale, 768, device=device)
         input_memory = torch.cuda.memory_allocated()
         print(f'Memory allocated by xlarge/y: '
@@ -199,7 +200,7 @@ def tn_benchmark():
           f'{humanize.naturalsize(dist_input_size)}')
     synchronize()
     result, dop_time, dpeak_memory = measure(
-        distributed_matmul_tn, xsmall, ysmall, offset=args.offset)
+        distributed_matmul_tn, xsmall, ysmall)
     del xsmall
     del ysmall
 
