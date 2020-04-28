@@ -211,8 +211,9 @@ def all_benchmark():
         avg_peak_memory = sum(all_peak_memory) / len(all_peak_memory)
         avg_output_memory = sum(all_output_memory) / len(all_output_memory)
 
-        return (input_memory, op_time, peak_memory, avg_input_size,
-                avg_op_time, avg_peak_memory, avg_output_memory)
+        return (input_memory, output_memory, op_time, peak_memory,
+                avg_input_size, avg_op_time, avg_peak_memory,
+                avg_output_memory)
 
 
 def main():
@@ -222,7 +223,7 @@ def main():
     }
     output = test_funcs[args.mode]()
     if is_main_process():
-        (input_memory, op_time, peak_memory, avg_input_size,
+        (input_memory, output_memory, op_time, peak_memory, avg_input_size,
          avg_op_time, avg_peak_memory, avg_output_memory) = output
 
         output = {
