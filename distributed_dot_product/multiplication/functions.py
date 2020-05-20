@@ -25,11 +25,17 @@ def measure(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         start_time = time.time()
+        if torch.cuda.is_available():
+            start_memory = torch.cuda.max_memory_allocated()
         if DEBUG:
             print(f'{f.__name__} - Left: {args[0].size()}, '
                   f'Right: {args[1].size()}')
         result = f(*args, **kwargs)
         if DEBUG:
+            if torch.cuda.is_available():
+                end_memory = torch.cuda.max_memory_allocated()
+                total_memory = end_memory - start_memory
+                print(f'{f.__name__} GPU memory: {total_memory}')
             print(f'{f.__name__} elapsed time: {time.time() - start_time}')
         return result
     return wrapper
