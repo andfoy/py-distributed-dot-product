@@ -52,3 +52,20 @@ class FullMultiplication(autograd.Function):
         left_grad = distributed_matmul_nt(output_grad, right, offset=offset)
         right_grad = distributed_matmul_tn(left, output_grad)
         return left_grad, right_grad, None
+
+
+class LeftTransposeMultiplication(autograd.Function):
+    @staticmethod
+    def forward(ctx: Any, left: Tensor, right: Tensor, offset: int) -> Tensor:
+        ctx.save_for_backward(left, right)
+        ctx.offset = offset
+        result = distributed_matmul_tn(left, right)
+        return result
+
+    @staticmethod
+    def backward(ctx: Any, output_grad: Tensor) -> (Tensor, Tensor, None):
+        left, right = ctx.saved_tensors
+        offset = ctx.offset
+        left_grad = distributed_matmul_nt(output_grad, right, offset=offset)
+        right_grad = distributed_matmul_all(left, output_grad)
+        return left_grad, right_grad, None
