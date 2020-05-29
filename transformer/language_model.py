@@ -117,9 +117,9 @@ class TransformerEncoderLayer(nn.Module):
         self.self_attn = DistributedDotProductAttn(
             d_model, num_heads=nhead, distributed=distributed)
         self.positional_embeddings = TimeEmbeddings(d_model, dropout=dropout)
-        self.linear1 = nn.Linear(d_model, dim_feedforward)
+        self.linear1 = nn.Linear(d_model, ff_size)
         self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim_feedforward, d_model)
+        self.linear2 = nn.Linear(ff_size, d_model)
 
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
