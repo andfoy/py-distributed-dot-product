@@ -153,7 +153,8 @@ class TransformerEncoderLayer(nn.Module):
         q = k = self.positional_embeddings(src2)
         if src_mask is None:
             B, T, _ = src.size()
-            src_mask = torch.zeros(B, T, T * get_world_size(), device=device)
+            src_mask = torch.zeros(B, T, T * get_world_size(),
+                                   dtype=torch.bool, device=device)
         src2 = self.self_attn(q, k, src2, attn_mask=src_mask)
         src = src + self.dropout1(src2)
         src2 = self.norm2(src)
