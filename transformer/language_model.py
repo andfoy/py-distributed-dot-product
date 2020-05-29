@@ -404,7 +404,7 @@ if __name__ == "__main__":
     argparser.add_argument("--use_adasum", action="store_true")
     argparser.add_argument("--data", type=str, required=True, help="training file")
     argparser.add_argument("--batch_size", "--batch", type=int, default=128)
-    # argparser.add_argument("--unroll_size", type=int, default=100)
+    argparser.add_argument("--unroll_size", type=int, default=100)
     argparser.add_argument("--max_epoch", type=int, default=100)
     argparser.add_argument("--emb_size", type=int, default=1024)
     argparser.add_argument("--ff_size", type=int, default=2048)
