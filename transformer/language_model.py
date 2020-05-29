@@ -248,7 +248,7 @@ def eval_model(model, valid):
             x = x.to(device)
             y = y.to(device)
             x = x.transpose(0, 1)
-            y = y.transpose(0, 1).view(-1)
+            y = y.transpose(0, 1).contiguous().view(-1)
             output = model(x)
             loss = criterion(output, y)
             loss = hvd.allreduce(loss, op=hvd.Sum)
@@ -327,7 +327,7 @@ def main(args):
             y = train[1][i * unroll_size:(i + 1) * unroll_size]
 
             x = x.transpose(0, 1)
-            y = y.transpose(0, 1).view(-1)
+            y = y.transpose(0, 1).contiguous().view(-1)
 
             model.zero_grad()
             output = model(x)
