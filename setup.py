@@ -47,7 +47,7 @@ setup(
     long_description=get_description(),
     long_description_content_type='text/markdown',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    setup_requires=['torch', 'horovod'],
+    setup_requires=['torch', 'horovod', 'mpi4py'],
     package_data=dict(winpty=['*.so', '*.a']),
     install_requires=['backports.shutil_which;python_version<"3.0"'],
     classifiers=[
