@@ -244,9 +244,11 @@ def eval_model(model, valid):
         N = (len(valid[0]) - 1) // unroll_size + 1
         for i in range(N):
             x = valid[0][i * unroll_size:(i + 1) * unroll_size]
-            y = valid[1][i * unroll_size:(i + 1) * unroll_size].view(-1)
+            y = valid[1][i * unroll_size:(i + 1) * unroll_size]
             x = x.to(device)
             y = y.to(device)
+            x = x.transpose(0, 1)
+            y = y.transpose(0, 1).view(-1)
             output = model(x)
             loss = criterion(output, y)
             loss = hvd.allreduce(loss, op=hvd.Sum)
@@ -322,7 +324,10 @@ def main(args):
 
         for i in range(N):
             x = train[0][i * unroll_size:(i + 1) * unroll_size]
-            y = train[1][i * unroll_size:(i + 1) * unroll_size].view(-1)
+            y = train[1][i * unroll_size:(i + 1) * unroll_size]
+
+            x = x.transpose(0, 1)
+            y = y.transpose(0, 1).view(-1)
 
             model.zero_grad()
             output = model(x)
