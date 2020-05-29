@@ -32,7 +32,7 @@ import torch.nn.functional as F
 import horovod.torch as hvd
 
 # Local imports
-from distributed_dot_product.modules import DistributedDotProductAttn
+from distributed_dot_product.module import DistributedDotProductAttn
 from distributed_dot_product.utils.comm import (
     get_rank, get_world_size, comm, MPI)
 
@@ -160,7 +160,7 @@ class TransformerEncoderLayer(nn.Module):
         src = src + self.dropout2(src2)
         return src
 
-     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None):
+    def forward(self, src: Tensor, src_mask: Optional[Tensor] = None):
         if self.normalize_before:
             return self.forward_pre(src, src_mask, src_key_padding_mask, pos)
         return self.forward_post(src, src_mask, src_key_padding_mask, pos)
