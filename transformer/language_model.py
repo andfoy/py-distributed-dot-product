@@ -163,8 +163,8 @@ class TransformerEncoderLayer(nn.Module):
 
     def forward(self, src: Tensor, src_mask: Optional[Tensor] = None):
         if self.normalize_before:
-            return self.forward_pre(src, src_mask, src_key_padding_mask, pos)
-        return self.forward_post(src, src_mask, src_key_padding_mask, pos)
+            return self.forward_pre(src, src_mask, pos)
+        return self.forward_post(src, src_mask, pos)
 
 
 class TransformerEncoder(nn.Module):
