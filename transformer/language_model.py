@@ -288,7 +288,7 @@ def main(args):
     dev = create_batches(dev, args.batch_size)
     test = create_batches(test, args.batch_size)
     lr = (args.lr if not args.noam else
-          args.lr / ( args.n_d ** 0.5 ) / ( args.warmup_steps ** 1.5 ))
+          args.lr / ( args.emb_size ** 0.5 ) / ( args.warmup_steps ** 1.5 ))
 
     optimizer = optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
@@ -371,9 +371,9 @@ def main(args):
             niter += 1
             if args.noam:
                 if niter >= args.warmup_steps:
-                    lr = args.lr / (args.n_d ** 0.5) / (niter ** 0.5)
+                    lr = args.lr / (args.emb_size ** 0.5) / (niter ** 0.5)
                 else:
-                    lr = (args.lr / (args.n_d ** 0.5) /
+                    lr = (args.lr / (args.emb_size ** 0.5) /
                           (args.warmup_steps ** 1.5)) * niter
                 optimizer.param_groups[0]['lr'] = lr
 
@@ -401,10 +401,12 @@ if __name__ == "__main__":
     argparser.add_argument("--lstm", action="store_true")
     argparser.add_argument("--data", type=str, required=True, help="training file")
     argparser.add_argument("--batch_size", "--batch", type=int, default=128)
-    argparser.add_argument("--unroll_size", type=int, default=100)
+    # argparser.add_argument("--unroll_size", type=int, default=100)
     argparser.add_argument("--max_epoch", type=int, default=100)
-    argparser.add_argument("--n_e", type=int, default=0)
-    argparser.add_argument("--n_d", "--d", type=int, default=1024)
+    argparser.add_argument("--emb_size", type=int, default=1024)
+    argparser.add_argument("--ff_size", type=int, default=2048)
+    argparser.add_argument('--num_heads', type=int, default=8)
+    # argparser.add_argument("--n_d", "--d", type=int, default=1024)
     argparser.add_argument("--n_proj", type=int, default=0)
     argparser.add_argument("--dropout", type=float, default=0.2,
         help="dropout probability"
@@ -419,5 +421,6 @@ if __name__ == "__main__":
     argparser.add_argument("--log_period", type=int, default=100000)
 
     args = argparser.parse_args()
+    args.distributed = get_world_size() > 1
     print(args)
     main(args)
