@@ -47,7 +47,7 @@ class DistributedDotProductAttn(nn.Module):
         if self.num_heads > 1:
             attn_mask = attn_mask.unsqueeze(1)
             attn_mask = attn_mask.expand(attn_mask.size(0),
-                                         self.num_heads, *attn_mask.size()[2:])
+                                         self.num_heads, *attn_mask.size()[1:])
             keys = keys.view(*keys.size()[:-1], self.num_heads, self.dim)
             queries = queries.view(*queries.size()[:-1], self.num_heads,
                                    self.dim)
@@ -63,7 +63,7 @@ class DistributedDotProductAttn(nn.Module):
         else:
             projection = torch.matmul(keys, queries.transpose(-1, -2))
         projection = projection / math.sqrt(self.dim)
-        projection = projection.masked_fill(attn_mask, -float('inf'))
+        projection = projection.masked_fill(attn_mask.bool(), -float('inf'))
         attn = torch.softmax(projection, dim=-1)
         if self.distributed:
             outputs = FullMultiplication.apply(attn, values, self.offset)
