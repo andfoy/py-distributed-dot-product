@@ -400,6 +400,7 @@ if __name__ == "__main__":
     argparser.add_argument("--warmup_steps", type=int, default=32000)
     argparser.add_argument("--layer_norm", action="store_true")
     argparser.add_argument("--lstm", action="store_true")
+    argparser.add_argument("--fp16_allreduce", action="store_true")
     argparser.add_argument("--data", type=str, required=True, help="training file")
     argparser.add_argument("--batch_size", "--batch", type=int, default=128)
     # argparser.add_argument("--unroll_size", type=int, default=100)
