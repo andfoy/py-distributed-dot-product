@@ -191,8 +191,9 @@ class Model(nn.Module):
     def __init__(self, words, args):
         super(Model, self).__init__()
         self.args = args
-        self.emb_size = (
-            len(words) if len(words) < args.emb_size else args.emb_size)
+        # self.emb_size = (
+        #     len(words) if len(words) < args.emb_size else args.emb_size)
+        self.emb_size = args.emb_size
         self.depth = args.depth
         self.drop = nn.Dropout(args.dropout)
         self.embedding_layer = nn.Embedding(len(words), self.emb_size)
