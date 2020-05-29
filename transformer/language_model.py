@@ -21,6 +21,7 @@ from typing import Optional, List
 
 # Third party imports
 import numpy as np
+from tensorboardX import SummaryWriter
 
 # PyTorch imports
 import torch
