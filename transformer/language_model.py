@@ -216,13 +216,13 @@ class Model(nn.Module):
             else:
                 p.data.zero_()
 
-    def forward(self, x, hidden):
+    def forward(self, x):
         emb = self.drop(self.embedding_layer(x))
         output = self.transformer(emb)
         output = self.drop(output)
         output = output.view(-1, output.size(2))
         output = self.output_layer(output)
-        return output, hidden
+        return output
 
 
 def calc_norm(lis):
@@ -245,7 +245,7 @@ def eval_model(model, valid):
             y = valid[1][i * unroll_size:(i + 1) * unroll_size].view(-1)
             x = x.to(device)
             y = y.to(device)
-            output, hidden = model(x, hidden)
+            output = model(x)
             loss = criterion(output, y)
             loss = hvd.allreduce(loss, op=hvd.Sum)
             total_loss += loss.item()
