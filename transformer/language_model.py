@@ -112,11 +112,13 @@ class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model : int, nhead: int, ff_size: int = 2048,
                  dropout: float = 0.1,
                  activation: str = 'relu', normalize_before: bool = False,
-                 offset: int = 50,
+                 nt_offset: int = 50,
+                 all_offset: int = 32,
                  distributed: bool = False):
         super().__init__()
         self.self_attn = DistributedDotProductAttn(
-            d_model, num_heads=nhead, distributed=distributed, offset=offset)
+            d_model, num_heads=nhead, distributed=distributed,
+            nt_offset=offset, all_offset=all_offset)
         self.positional_embeddings = TimeEmbeddings(d_model, dropout=dropout)
         self.linear1 = nn.Linear(d_model, ff_size)
         self.dropout = nn.Dropout(dropout)
@@ -203,7 +205,9 @@ class Model(nn.Module):
         self.distributed = args.distributed
         layer = TransformerEncoderLayer(self.emb_size, args.num_heads,
                                         args.ff_size, dropout=args.dropout,
-                                        distributed=self.distributed)
+                                        distributed=self.distributed,
+                                        nt_offset=args.nt_offset,
+                                        all_offset=args.all_offset)
         self.transformer = TransformerEncoder(layer, self.depth)
         self.output_layer = nn.Linear(self.emb_size, self.output_size)
         self.init_weights()
