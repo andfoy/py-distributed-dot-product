@@ -22,7 +22,9 @@ hvd.init()
 class DistributedDotProductAttn(nn.Module):
     def __init__(self, key_dim: int, value_dim: int = None,
                  query_dim: int = None, num_heads: int = 1,
-                 add_bias: bool = False, offset: int = 32,
+                 add_bias: bool = False,
+                 nt_offset: int = 32,
+                 all_offset: int = 32,
                  distributed: bool = True):
         super(DistributedDotProductAttn, self).__init__()
         assert key_dim % num_heads == 0
@@ -30,7 +32,8 @@ class DistributedDotProductAttn(nn.Module):
         query_dim = query_dim if query_dim is not None else key_dim
         self.num_heads = num_heads
         self.value_dim = value_dim
-        self.offset = offset
+        self.nt_offset = nt_offset
+        self.all_offset = all_offset
         self.distributed = distributed
         self.dim = key_dim // self.num_heads
         self.keys = nn.Linear(key_dim, key_dim, bias=add_bias)
@@ -59,14 +62,14 @@ class DistributedDotProductAttn(nn.Module):
 
         if self.distributed:
             projection = RightTransposeMultiplication.apply(keys, queries,
-                                                            self.offset)
+                                                            self.nt_offset)
         else:
             projection = torch.matmul(keys, queries.transpose(-1, -2))
         projection = projection / math.sqrt(self.dim)
         projection = projection.masked_fill(attn_mask.bool(), -float('inf'))
         attn = torch.softmax(projection, dim=-1)
         if self.distributed:
-            outputs = FullMultiplication.apply(attn, values, self.offset)
+            outputs = FullMultiplication.apply(attn, values, self.all_offset)
         else:
             outputs = torch.matmul(attn, values)
         if self.num_heads > 1:

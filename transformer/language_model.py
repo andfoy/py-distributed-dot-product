@@ -112,10 +112,11 @@ class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model : int, nhead: int, ff_size: int = 2048,
                  dropout: float = 0.1,
                  activation: str = 'relu', normalize_before: bool = False,
+                 offset: int = 50,
                  distributed: bool = False):
         super().__init__()
         self.self_attn = DistributedDotProductAttn(
-            d_model, num_heads=nhead, distributed=distributed)
+            d_model, num_heads=nhead, distributed=distributed, offset=offset)
         self.positional_embeddings = TimeEmbeddings(d_model, dropout=dropout)
         self.linear1 = nn.Linear(d_model, ff_size)
         self.dropout = nn.Dropout(dropout)
@@ -362,7 +363,7 @@ def main(args):
                     niter
                 )
 
-            if niter % args.log_period == 0 or i == N - 1 and get_rank() == 0:
+            if (niter % args.log_period == 0 or i == N - 1) and get_rank() == 0:
                 elapsed_time = (time.time() - start_time) / 60.0
                 dev_ppl, dev_loss = eval_model(model, dev)
                 sys.stdout.write("\rIter={}  lr={:.5f}  train_loss={:.4f} "
@@ -423,6 +424,8 @@ if __name__ == "__main__":
     argparser.add_argument("--max_epoch", type=int, default=100)
     argparser.add_argument("--emb_size", type=int, default=1024)
     argparser.add_argument("--ff_size", type=int, default=2048)
+    argparser.add_argument("--nt_offset", type=int, default=50)
+    argparser.add_argument("--all_offset", type=int, default=32)
     argparser.add_argument('--num_heads', type=int, default=8)
     # argparser.add_argument("--n_d", "--d", type=int, default=1024)
     argparser.add_argument("--n_proj", type=int, default=0)
