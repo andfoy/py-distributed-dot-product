@@ -206,11 +206,11 @@ class Model(nn.Module):
 
     def init_weights(self, val_range=None):
         #val_range = val_range or (3.0/self.n_d)**0.5
-        params = list(self.embedding_layer.parameters()) +
-                      list(self.output_layer.parameters())
+        params = (list(self.embedding_layer.parameters()) +
+                  list(self.output_layer.parameters()))
         for p in params:
             if p.dim() > 1:  # matrix
-                val = val_range or (3.0/p.size(0))**0.5
+                val = val_range or (3.0 / p.size(0)) ** 0.5
                 p.data.uniform_(-val, val)
             else:
                 p.data.zero_()
