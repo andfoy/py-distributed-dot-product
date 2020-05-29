@@ -238,13 +238,17 @@ def eval_model(model, valid):
         args = model.args
         batch_size = valid[0].size(1)
         total_loss = 0.0
+        rank = get_rank()
+        world_size = get_world_size()
         unroll_size = args.unroll_size
+        partition_size = unroll_size // world_size
         criterion = nn.CrossEntropyLoss(size_average=False)
         # hidden = model.init_hidden(batch_size)
         N = (len(valid[0]) - 1) // unroll_size + 1
         for i in range(N):
-            x = valid[0][i * unroll_size:(i + 1) * unroll_size]
-            y = valid[1][i * unroll_size:(i + 1) * unroll_size]
+            start = (i * world_size + rank) * partition_size
+            x = valid[0][start:start + partition_size]
+            y = valid[1][start:start + partition_size]
             x = x.to(device)
             y = y.to(device)
             x = x.transpose(0, 1)
@@ -312,8 +316,11 @@ def main(args):
     niter = 1
     unchanged = 0
     best_dev = 1e+8
+    rank = get_rank()
+    world_size = get_world_size()
     unroll_size = args.unroll_size
     batch_size = args.batch_size
+    partition_size = unroll_size // world_size
     N = (len(train[0]) - 1) // unroll_size + 1
     criterion = nn.CrossEntropyLoss()
 
@@ -323,8 +330,10 @@ def main(args):
         total_loss = 0.0
 
         for i in range(N):
-            x = train[0][i * unroll_size:(i + 1) * unroll_size]
-            y = train[1][i * unroll_size:(i + 1) * unroll_size]
+            # start = i * (rpolnk + 1) * partition_size
+            start = (i * world_size + rank) * partition_size
+            x = train[0][start:start + partition_size]
+            y = train[1][start:start + partition_size]
 
             x = x.transpose(0, 1)
             y = y.transpose(0, 1).contiguous().view(-1)
