@@ -63,13 +63,14 @@ def read_corpus(path, num_test_symbols=5000000):
 
 
 def create_batches(data_ids, batch_size):
-    N = len(data_ids)
-    L = ((N - 1) // batch_size) * batch_size
-    x = np.copy(data_ids[:L].reshape(batch_size, -1).T)
-    y = np.copy(data_ids[1:L + 1].reshape(batch_size, -1).T)
-    x, y = torch.from_numpy(x), torch.from_numpy(y)
-    x, y = x.contiguous(), y.contiguous()
-    x, y = x.to(device), y.to(device)
+    with torch.no_grad():
+        N = len(data_ids)
+        L = ((N - 1) // batch_size) * batch_size
+        x = np.copy(data_ids[:L].reshape(batch_size, -1).T)
+        y = np.copy(data_ids[1:L + 1].reshape(batch_size, -1).T)
+        x, y = torch.from_numpy(x), torch.from_numpy(y)
+        x, y = x.contiguous(), y.contiguous()
+        x, y = x.to(device), y.to(device)
     return x, y
 
 # ------------------------------- Models --------------------------------------
@@ -340,8 +341,8 @@ def main(args):
             x = train[0][start:start + partition_size]
             y = train[1][start:start + partition_size]
 
-            x = x.transpose(0, 1)
-            y = y.transpose(0, 1).contiguous().view(-1)
+            x = x.transpose(0, 1).detach()
+            y = y.transpose(0, 1).contiguous().view(-1).detach()
 
             model.zero_grad()
             output = model(x)
@@ -449,4 +450,13 @@ if __name__ == "__main__":
     args.distributed = get_world_size() > 1
     args.log = args.logging_path
     print(args)
-    main(args)
+    try:
+        main(args)
+    except:
+        for obj in gc.get_objects():
+            try:
+                if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    print(type(obj), obj.size())
+            except:
+                pass
+
