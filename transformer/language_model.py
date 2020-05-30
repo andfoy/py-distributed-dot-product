@@ -401,7 +401,7 @@ def main(args):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(sys.argv[0], conflict_handler='resolve')
-    argparser.add_argument("--log", type=str, required=True)
+    argparser.add_argument("--logging_path", type=str, required=True)
     argparser.add_argument("--noam", action="store_true")
     argparser.add_argument("--warmup_steps", type=int, default=32000)
     argparser.add_argument("--layer_norm", action="store_true")
@@ -431,5 +431,6 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
     args.distributed = get_world_size() > 1
+    args.log = args.logging_path
     print(args)
     main(args)
